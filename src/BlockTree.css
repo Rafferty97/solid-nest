@@ -1,0 +1,22 @@
+[data-children]::after {
+    display: block;
+    content: "";
+    margin-top: var(--bt-offset);
+    transition: margin-top var(--bt-transition);
+}
+
+[data-measuring] [data-children]::after {
+    display: none;
+}
+
+[data-children] > * + * {
+    margin-top: var(--bt-spacing);
+}
+
+[data-children] > * + [data-kind="placeholder"] {
+    margin-top: 0;
+}
+
+[data-kind] + [data-kind="placeholder"]:not([data-measuring]) {
+    display: none;
+}
