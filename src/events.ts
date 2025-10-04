@@ -1,3 +1,5 @@
+import { Block } from './Block'
+
 export type SelectionEvent<K> = {
   /** The key of the block that was selected/deselected. */
   readonly key?: K
@@ -28,6 +30,13 @@ export enum SelectionMode {
   Range = 'range',
   /** Deselects all blocks. */
   Deselect = 'deselect',
+}
+
+export type InsertEvent<K, T> = {
+  /** The blocks being inserted. */
+  blocks: Block<K, T>[]
+  /** The place where the blocks will be inserted. */
+  place: Place<K>
 }
 
 export type ReorderEvent<K> = {

@@ -10,7 +10,15 @@ export type Block<K, T> = Partial<BlockOptions> & {
   children?: Block<K, T>[]
 }
 
-export type RootBlock<K, T> = Omit<Block<K, T>, 'data'>
+export type RootBlock<K, T> = Partial<BlockOptions> & {
+  /**
+   * Unique identifier of the block.
+   * Identifiers must remain unique when converted to strings.
+   */
+  key: K
+  /** The top-level blocks. */
+  children: Block<K, T>[]
+}
 
 /** Configures how a block is rendered and interacts with other blocks. */
 export type BlockOptions = {

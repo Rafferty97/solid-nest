@@ -20,7 +20,7 @@ export function calculateTransitionStyles<K>(
 
   const invert = new Map<string, ItemStyles>()
   const play = new Map<string, ItemStyles>()
-  const parentOffsets = new Map<number, readonly [number, number]>()
+  const parentOffsets: (readonly [number, number])[] = []
 
   for (const { id, level } of nextItems) {
     const prev = prevRects.get(id)
@@ -28,13 +28,14 @@ export function calculateTransitionStyles<K>(
     if (!prev || !next) continue
 
     const offset = [prev.left - next.left, prev.top - next.top] as const
-    const parentOffset = parentOffsets.get(level - 1) ?? [0, 0]
-    parentOffsets.set(level, offset)
+    const parentOffset = parentOffsets[level - 1] ?? [0, 0]
+    parentOffsets[level] = offset
 
     const outer: JSX.CSSProperties = {
       position: 'relative',
       width: `${next.width}px`,
       height: `${next.height}px`,
+      'box-sizing': 'border-box',
     }
 
     const innerFrom: JSX.CSSProperties = {
@@ -46,6 +47,7 @@ export function calculateTransitionStyles<K>(
       '--bt-offset': `${prev.height - next.height}px`,
       transition: undefined,
       '--bt-transition': undefined,
+      'box-sizing': 'border-box',
     }
 
     const innerTo: JSX.CSSProperties = {
@@ -57,6 +59,7 @@ export function calculateTransitionStyles<K>(
       '--bt-offset': '0px',
       transition: 'transform var(--bt-duration), width var(--bt-duration)',
       '--bt-transition': 'var(--bt-duration)',
+      'box-sizing': 'border-box',
     }
 
     invert.set(id, { outer, inner: innerFrom })

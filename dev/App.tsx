@@ -1,28 +1,75 @@
-import type { Component } from 'solid-js'
-import logo from './logo.svg'
+import { type Component } from 'solid-js'
+import { BlockTree, RootBlock } from 'src'
+import { createTree } from 'src/model'
 import styles from './App.module.css'
-import { Hello } from 'src'
 
 const App: Component = () => {
+  const root: RootBlock<string, string> = {
+    key: 'root',
+    children: [
+      {
+        key: 'a',
+        data: 'First',
+        tag: 'one',
+        accepts: ['two'],
+      },
+      {
+        key: 'b',
+        data: 'Second',
+        tag: 'one',
+        accepts: ['two'],
+      },
+      {
+        key: 'c',
+        data: 'Third',
+        tag: 'two',
+        accepts: ['one'],
+      },
+      {
+        key: 'd',
+        data: 'Fourth',
+        tag: 'two',
+        accepts: ['one'],
+      },
+    ],
+    accepts: ['one', 'two'],
+  }
+
+  const model = createTree(root)
+
+  let nextId = 0
+  const appendBlock = () => {
+    const block = {
+      key: `block${nextId++}`,
+      data: `Block ${nextId}`,
+    }
+    const parent = 'root'
+    // const parent = root.children[0]?.key!
+    model.onInsert({ blocks: [block], place: { parent, before: null } })
+  }
+
   return (
-    <div class={styles.App}>
-      <header class={styles.header}>
-        <img src={logo} class={styles.logo} alt="logo" />
-        <h1>
-          <Hello></Hello>
-        </h1>
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          class={styles.link}
-          href="https://github.com/solidjs/solid"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn Solid
-        </a>
-      </header>
+    <div class={styles.container}>
+      <BlockTree
+        {...model}
+        placeholder={() => <div class={styles.placeholder}>nothing here</div>}
+        transitionDuration={2500}
+      >
+        {block => (
+          <div
+            class={[styles.block, block.selected ? styles.selected : ''].join(' ')}
+            style={block.style}
+            draggable={true}
+            onDragStart={block.startDrag}
+          >
+            {block.data}
+            <div style={{ height: '10px' }} />
+            {block.children}
+            Footer
+          </div>
+        )}
+      </BlockTree>
+      <button onClick={appendBlock}>Append block</button>
     </div>
   )
 }
