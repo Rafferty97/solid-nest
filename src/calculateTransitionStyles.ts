@@ -2,11 +2,13 @@ import { JSX } from 'solid-js'
 import { isPlaceholderId, Item, ItemId } from './Item'
 import { BlockMeasurements } from './measure'
 import { calculateLayout } from './calculateLayout'
+import { Vec2 } from './util/types'
 
-export interface ItemStyles {
-  outer: JSX.CSSProperties
-  inner: JSX.CSSProperties
-  footer: JSX.CSSProperties
+export interface AnimationState {
+  size: Vec2
+  deltaPos: Vec2
+  deltaSize: Vec2
+  transition: boolean
 }
 
 export function calculateTransitionStyles<K>(
@@ -34,59 +36,73 @@ export function calculateTransitionStyles<K>(
     prevRects.set(GapItemId, new DOMRect(nextGap.x, nextGap.y, nextGap.width, calcHeight()))
   }
 
-  const invert = new Map<string, ItemStyles>()
-  const play = new Map<string, ItemStyles>()
-  const parentOffsets: (readonly [number, number])[] = []
+  const invert = new Map<ItemId, AnimationState>()
+  const play = new Map<ItemId, AnimationState>()
+  const parentOffsets: Vec2[] = []
 
   for (const { id, level } of nextItems) {
     const prev = prevRects.get(id)
     const next = nextRects.get(id)
     if (!prev || !next) continue
 
-    const offset = [prev.x - next.x, prev.y - next.y] as const
-    const parentOffset = parentOffsets[level - 1] ?? [0, 0]
+    const offset = { x: prev.x - next.x, y: prev.y - next.y }
+    const parentOffset = parentOffsets[level - 1] ?? Vec2.Zero
     parentOffsets[level] = offset
 
-    const outer: JSX.CSSProperties = {
-      position: 'relative',
-      width: `${next.width}px`,
-      height: `${next.height}px`,
-      'box-sizing': 'border-box',
-    }
+    const size = { x: next.width, y: next.height }
+    const deltaPos = { x: offset.x - parentOffset.x, y: offset.y - parentOffset.y }
+    const deltaSize = { x: prev.width - next.width, y: prev.height - next.height }
 
-    const innerFrom: JSX.CSSProperties = {
-      position: 'absolute',
-      left: '0',
-      top: '0',
-      transform: `translate(${offset[0] - parentOffset[0]}px, ${offset[1] - parentOffset[1]}px)`,
-      width: `${prev.width}px`,
-      transition: undefined,
-      'box-sizing': 'border-box',
-    }
-
-    const innerTo: JSX.CSSProperties = {
-      position: 'absolute',
-      left: '0',
-      top: '0',
-      transform: '',
-      width: `${next.width}px`,
-      transition: 'transform var(--bt-duration), width var(--bt-duration)',
-      'box-sizing': 'border-box',
-    }
-
-    const footerFrom: JSX.CSSProperties = {
-      transition: undefined,
-      'margin-top': `${prev.height - next.height}px`,
-    }
-
-    const footerTo: JSX.CSSProperties = {
-      transition: 'var(--bt-duration)',
-      'margin-top': '0px',
-    }
-
-    invert.set(id, { outer, inner: innerFrom, footer: footerFrom })
-    play.set(id, { outer, inner: innerTo, footer: footerTo })
+    invert.set(id, { size, deltaPos, deltaSize, transition: false })
+    play.set(id, { size, deltaPos: Vec2.Zero, deltaSize: Vec2.Zero, transition: true })
   }
 
   return { invert, play }
+}
+
+export function outerStyle(state?: AnimationState): JSX.CSSProperties {
+  if (!state) return {}
+  return {
+    position: 'relative',
+    width: `${state.size.x}px`,
+    height: `${state.size.y}px`,
+    'box-sizing': 'border-box',
+  }
+}
+
+export function innerStyle(state?: AnimationState): JSX.CSSProperties {
+  if (!state) return {}
+  return {
+    position: 'absolute',
+    left: '0',
+    top: '0',
+    transition: state.transition ? 'transform var(--bt-duration), width var(--bt-duration)' : '',
+    transform: `translate(${state.deltaPos.x}px, ${state.deltaPos.y}px)`,
+    width: `${state.size.x + state.deltaSize.x}px`,
+    'box-sizing': 'border-box',
+  }
+}
+
+export function footerStyle(state?: AnimationState): JSX.CSSProperties {
+  if (!state) return {}
+  return {
+    transition: state.transition ? `margin-top var(--bt-duration)` : '',
+    'margin-top': `${state.deltaSize.y}px`,
+  }
+}
+
+export function placeholderStyle(state?: AnimationState): JSX.CSSProperties {
+  if (!state) return {}
+  return {
+    position: 'absolute',
+    left: '0',
+    top: '0',
+    transition: state.transition
+      ? 'transform var(--bt-duration), width var(--bt-duration), height var(--bt-duration)'
+      : '',
+    transform: `translate(${state.deltaPos.x}px, ${state.deltaPos.y}px)`,
+    width: `${state.size.x + state.deltaSize.x}px`,
+    height: `${state.size.y + state.deltaSize.y}px`,
+    'box-sizing': 'border-box',
+  }
 }

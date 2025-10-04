@@ -22,7 +22,7 @@ import { measureBlock, measureBlocks } from './measure'
 import { insertPlaceholders } from './insertPlaceholders'
 import { getInsertionPoints } from './getInsertionPoints'
 import { createAnimations } from './createAnimations'
-import { ItemStyles } from './calculateTransitionStyles'
+import { AnimationState, footerStyle, innerStyle, outerStyle, placeholderStyle } from './calculateTransitionStyles'
 import { notNull } from './util/notNull'
 import { Dropzone } from './Dropzone'
 import './BlockTree.css'
@@ -252,7 +252,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
   const renderItem = (
     item: Item<K, T>,
     children: Accessor<Item<K, T>[]>,
-    styles: Accessor<Map<string, ItemStyles>> | undefined,
+    styles: Accessor<Map<string, AnimationState>> | undefined,
     itemProps: { dragging?: boolean } = {},
   ) => {
     const startDrag = (ev: MouseEvent) => {
@@ -312,7 +312,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       <div
         ref={el => itemElements.set(item.id, el)}
         data-kind={item.kind}
-        style={styles?.().get(item.id)?.outer}
+        style={outerStyle(styles?.().get(item.id))}
         onMouseDown={handleBlockMouseDown}
         onFocus={selectionUpdateHandler('focus')}
         onClick={selectionUpdateHandler('click')}
@@ -326,18 +326,18 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
             selected={selection().includes(item.key)}
             dragging={itemProps.dragging === true}
             style={{
-              ...styles?.().get(item.id)?.inner,
+              ...innerStyle(styles?.().get(item.id)),
               '--bt-spacing': `${item.spacing ?? options().defaultSpacing}px`,
             }}
             startDrag={startDrag}
           >
-            {renderItems(children, () => styles?.().get(item.id)?.footer, styles)}
+            {renderItems(children, () => footerStyle(styles?.().get(item.id)), styles)}
           </Dynamic>
         )}
         {item.kind === 'placeholder' && <Dynamic component={placeholder} parent={item.parent} />}
         {item.kind === 'gap' && (
-          <div style={{ 'z-index': 50, ...styles?.().get(item.id)?.inner }}>
-            <Dynamic component={dropzone} style={{ height: `${item.height}px` }} />
+          <div style={{ 'z-index': 50, ...placeholderStyle(styles?.().get(item.id)) }}>
+            <Dynamic component={dropzone} style={{ height: '100%' }} />
           </div>
         )}
       </div>
@@ -354,7 +354,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
   const renderItems = (
     items: Accessor<Item<K, T>[]>,
     footer: Accessor<JSX.CSSProperties | undefined> | undefined,
-    childStyles: Accessor<Map<string, ItemStyles>> | undefined,
+    childStyles: Accessor<Map<string, AnimationState>> | undefined,
   ) => {
     const mappedItems = mapArray(items, (item, index) => {
       const children = () => getChildren(item, index, items)

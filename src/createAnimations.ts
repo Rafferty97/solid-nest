@@ -1,6 +1,6 @@
 import { Accessor, createEffect, createSignal, onCleanup, untrack } from 'solid-js'
 import { Item, ItemId, RootItemId } from './Item'
-import { calculateTransitionStyles, ItemStyles } from './calculateTransitionStyles'
+import { calculateTransitionStyles, AnimationState } from './calculateTransitionStyles'
 import { measureBlocks } from './measure'
 
 export function createAnimations<K, T>(
@@ -12,7 +12,7 @@ export function createAnimations<K, T>(
   }>,
 ) {
   const [items, setItems] = createSignal<Item<K, T>[]>([])
-  const [styles, setStyles] = createSignal(new Map<string, ItemStyles>())
+  const [styles, setStyles] = createSignal(new Map<ItemId, AnimationState>())
   const [animationState, setAnimationState] = createSignal<{
     step: number
     fn: Generator<number>
