@@ -1,17 +1,17 @@
 {
-  "name": "{{name_of_lib}}",
+  "name": "solid-nest",
   "version": "0.0.0",
-  "description": "{{desc_of_lib}}",
+  "description": "Nested block UI component, supporting drag-and-drop, multi-select and smooth animations",
   "license": "MIT",
-  "author": "{{me}}",
+  "author": "Rafferty97",
   "contributors": [],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/{{me}}/{{name_of_lib}}.git"
+    "url": "git+https://github.com/Rafferty97/solid-nest.git"
   },
-  "homepage": "https://github.com/{{me}}/{{name_of_lib}}#readme",
+  "homepage": "https://github.com/Rafferty97/solid-nest#readme",
   "bugs": {
-    "url": "https://github.com/{{me}}/{{name_of_lib}}/issues"
+    "url": "https://github.com/Rafferty97/solid-nest/issues"
   },
   "files": [
     "dist"
