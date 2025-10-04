@@ -39,7 +39,7 @@ export function calculateLayout<K>(
   for (const { id, kind, level, spacing } of items) {
     if (level > nextVisibleLevel) continue
 
-    const { margin, inner } = measureItem(id) ?? {}
+    const { margin, childrenVisible } = measureItem(id) ?? {}
 
     // Check whether this is the first block in its parent
     const isFirst = stack.length <= level
@@ -69,7 +69,7 @@ export function calculateLayout<K>(
       nextWidth -= margin.left + margin.right
     }
 
-    nextVisibleLevel = level + (opts.skipHidden && !inner ? 0 : 1)
+    nextVisibleLevel = level + (opts.skipHidden && !childrenVisible ? 0 : 1)
   }
 
   // Close remaining blocks

@@ -14,6 +14,7 @@ export interface AnimationState {
 export function calculateTransitionStyles<K>(
   prevItems: Item<K>[],
   nextItems: Item<K>[],
+  initMeasures: Map<ItemId, DOMRect | undefined>,
   prevMeasures: Map<ItemId, BlockMeasurements>,
   nextMeasures: Map<ItemId, BlockMeasurements>,
   options: { defaultSpacing: number },
@@ -38,20 +39,41 @@ export function calculateTransitionStyles<K>(
 
   const invert = new Map<ItemId, AnimationState>()
   const play = new Map<ItemId, AnimationState>()
-  const parentOffsets: Vec2[] = []
+  const parents: Vec2[] = []
+  const zeroAdjust = { x: 0, y: 0, width: 0, height: 0 }
 
   for (const { id, level } of nextItems) {
     const prev = prevRects.get(id)
     const next = nextRects.get(id)
     if (!prev || !next) continue
 
-    const offset = { x: prev.x - next.x, y: prev.y - next.y }
-    const parentOffset = parentOffsets[level - 1] ?? Vec2.Zero
-    parentOffsets[level] = offset
-
     const size = { x: next.width, y: next.height }
-    const deltaPos = { x: offset.x - parentOffset.x, y: offset.y - parentOffset.y }
-    const deltaSize = { x: prev.width - next.width, y: prev.height - next.height }
+
+    const a = initMeasures.get(id)
+    const b = prevMeasures.get(id)?.inner
+    let adjust = zeroAdjust
+    if (a && b) {
+      adjust = {
+        x: a.x - b.x,
+        y: a.y - b.y,
+        width: a.width - b.width,
+        height: a.height - b.height,
+      }
+    }
+
+    const deltaPos = {
+      x: prev.x - next.x + adjust.x,
+      y: prev.y - next.y + adjust.y,
+    }
+    const deltaSize = {
+      x: prev.width - next.width + adjust.width,
+      y: prev.height - next.height + adjust.height,
+    }
+
+    const parent = parents[level - 1] ?? Vec2.Zero
+    deltaPos.x -= parent.x
+    deltaPos.y -= parent.y
+    parents[level] = deltaPos
 
     invert.set(id, { size, deltaPos, deltaSize, transition: false })
     play.set(id, { size, deltaPos: Vec2.Zero, deltaSize: Vec2.Zero, transition: true })

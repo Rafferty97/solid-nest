@@ -1,7 +1,7 @@
 import { Accessor, createEffect, createSignal, onCleanup, untrack } from 'solid-js'
 import { Item, ItemId, RootItemId } from './Item'
 import { calculateTransitionStyles, AnimationState } from './calculateTransitionStyles'
-import { measureBlocks } from './measure'
+import { measureBlocks, measureInnerBlocks } from './measure'
 
 export function createAnimations<K, T>(
   input: Accessor<Item<K, T>[]>,
@@ -19,6 +19,8 @@ export function createAnimations<K, T>(
   }>()
 
   function* animate(prevItems: Item<K, T>[], nextItems: Item<K, T>[]) {
+    const initRects = measureInnerBlocks(itemElements)
+
     // F. Before state measurement
     setStyles(new Map())
     yield 0
@@ -30,7 +32,7 @@ export function createAnimations<K, T>(
     const nextRects = measureBlocks(RootItemId, itemElements)
 
     // I. Apply inverse styles
-    const { invert, play } = calculateTransitionStyles(prevItems, nextItems, prevRects, nextRects, options())
+    const { invert, play } = calculateTransitionStyles(prevItems, nextItems, initRects, prevRects, nextRects, options())
     setStyles(invert)
 
     // P. Play animation

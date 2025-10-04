@@ -319,24 +319,31 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
         tabIndex={item.kind === 'block' ? -1 : undefined}
       >
         {item.kind === 'block' && (
-          <Dynamic
-            component={props.children}
-            key={item.key}
-            data={item.data}
-            selected={selection().includes(item.key)}
-            dragging={itemProps.dragging === true}
+          <div
+            class="bt-transition"
             style={{
               ...innerStyle(styles?.().get(item.id)),
               '--bt-spacing': `${item.spacing ?? options().defaultSpacing}px`,
             }}
-            startDrag={startDrag}
           >
-            {renderItems(children, () => footerStyle(styles?.().get(item.id)), styles)}
-          </Dynamic>
+            <Dynamic
+              component={props.children}
+              key={item.key}
+              data={item.data}
+              selected={selection().includes(item.key)}
+              dragging={itemProps.dragging === true}
+              startDrag={startDrag}
+            >
+              {renderItems(children, () => footerStyle(styles?.().get(item.id)), styles)}
+            </Dynamic>
+          </div>
         )}
         {item.kind === 'placeholder' && <Dynamic component={placeholder} parent={item.parent} />}
         {item.kind === 'gap' && (
-          <div style={{ 'z-index': 50, height: `${item.height}px`, ...placeholderStyle(styles?.().get(item.id)) }}>
+          <div
+            class="bt-transition"
+            style={{ 'z-index': 50, height: `${item.height}px`, ...placeholderStyle(styles?.().get(item.id)) }}
+          >
             <Dynamic component={dropzone} />
           </div>
         )}
@@ -423,6 +430,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
 
   return (
     <div
+      ref={el => itemElements.set(RootItemId, el)}
       data-kind="root"
       onFocusOut={ev => {
         if (ev.relatedTarget === topElement) return
@@ -444,7 +452,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       }}
     >
       <div
-        ref={el => itemElements.set(RootItemId, el)}
+        class="bt-transition"
         style={{
           ...innerStyle(styles().get(RootItemId)),
           '--bt-spacing': `${props.root.spacing ?? options().defaultSpacing}px`,

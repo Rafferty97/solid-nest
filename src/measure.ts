@@ -8,6 +8,7 @@ export type BlockMeasurements = Readonly<{
   outer: DOMRect
   inner?: DOMRect
   children: DOMRect
+  childrenVisible: boolean
 }>
 
 export function measureBlocks<K>(root: K, blocks: Map<K, HTMLElement>): Map<K, BlockMeasurements> {
@@ -24,23 +25,34 @@ export function measureBlocks<K>(root: K, blocks: Map<K, HTMLElement>): Map<K, B
 
 export function measureBlock(block: HTMLElement): BlockMeasurements {
   const outer = block.getBoundingClientRect()
-  let inner = block.querySelector('[data-children]')?.getBoundingClientRect()
 
-  if (inner && (inner.top >= outer.bottom || inner.bottom <= outer.top)) {
-    inner = undefined
-  }
+  const inner = block.querySelector('& > .bt-transition')?.getBoundingClientRect()
+
+  let children = block.querySelector('[data-children]')?.getBoundingClientRect()
+  const childrenVisible = !!children && children.top < outer.bottom && children.bottom > outer.top
+  children ??= outer
 
   let margin = { top: outer.height, right: 0, bottom: 0, left: 0 }
-  if (inner) {
+  if (childrenVisible) {
     margin = {
-      top: inner.top - outer.top,
-      right: outer.right - inner.right,
-      bottom: outer.bottom - inner.bottom,
-      left: inner.left - outer.left,
+      top: children.top - outer.top,
+      right: outer.right - children.right,
+      bottom: outer.bottom - children.bottom,
+      left: children.left - outer.left,
     }
   }
 
-  const children = inner ?? outer
+  return { margin, outer, inner, children, childrenVisible }
+}
 
-  return { margin, outer, inner, children }
+export function measureInnerBlocks<K>(blocks: Map<K, HTMLElement>): Map<K, DOMRect | undefined> {
+  const output = new Map()
+  for (const [key, container] of blocks) {
+    output.set(key, measureInner(container))
+  }
+  return output
+}
+
+export function measureInner(block: HTMLElement): DOMRect | undefined {
+  return block.querySelector('& > .bt-transition')?.getBoundingClientRect()
 }
