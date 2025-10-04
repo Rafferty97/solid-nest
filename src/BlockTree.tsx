@@ -24,6 +24,7 @@ import { getInsertionPoints } from './getInsertionPoints'
 import { createAnimations } from './createAnimations'
 import { ItemStyles } from './calculateTransitionStyles'
 import { notNull } from './util/notNull'
+import { Dropzone } from './Dropzone'
 import './BlockTree.css'
 
 export type BlockTreeProps<K, T> = {
@@ -40,7 +41,7 @@ export type BlockTreeProps<K, T> = {
   /** Fired when blocks are removed. */
   onRemove?: (event: RemoveEvent<K>) => void
   /** Optional custom dropzone component. */
-  dropzone?: Component<{ height: number; style?: JSX.CSSProperties; footer?: JSX.CSSProperties }>
+  dropzone?: Component<{ style?: JSX.CSSProperties }>
   /** Optional custom placeholder component. */
   placeholder?: Component<{ parent: K }>
   /** Component used to render blocks. */
@@ -278,23 +279,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     }
 
     const placeholder = props.placeholder ?? (() => <div />)
-
-    const defaultDropzone = (props: { height: number; style?: JSX.CSSProperties; footer?: JSX.CSSProperties }) => {
-      return (
-        <div
-          style={{
-            'border-radius': '4px',
-            background: 'rgba(0, 0, 0, 0.05)',
-            'z-index': 50,
-            ...props.style,
-          }}
-        >
-          <div style={{ height: `${props.height}px` }} />
-          <div style={props.footer} />
-        </div>
-      )
-    }
-    const dropzone = props.dropzone ?? defaultDropzone
+    const dropzone = props.dropzone ?? Dropzone
 
     let newSelection: ReturnType<typeof updateSelection> | undefined
 
@@ -351,12 +336,9 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
         )}
         {item.kind === 'placeholder' && <Dynamic component={placeholder} parent={item.parent} />}
         {item.kind === 'gap' && (
-          <Dynamic
-            component={dropzone}
-            height={item.height}
-            style={styles?.().get(item.id)?.inner}
-            footer={styles?.().get(item.id)?.footer}
-          />
+          <div style={{ 'z-index': 50, ...styles?.().get(item.id)?.inner }}>
+            <Dynamic component={dropzone} style={{ height: `${item.height}px` }} />
+          </div>
         )}
       </div>
     )
