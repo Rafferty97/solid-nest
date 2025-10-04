@@ -1,7 +1,8 @@
 import { Accessor } from 'solid-js'
 import { Block, BlockOptions } from './BlockTree'
+import { RootBlock } from './Block'
 
-export type Item<K, T = unknown> = BlockItem<K, T> | PlaceholderItem<K> | GapItem
+export type Item<K, T = unknown> = RootItem<K> | BlockItem<K, T> | PlaceholderItem<K> | GapItem
 
 export type ItemId = string & { readonly brand: unique symbol }
 
@@ -10,30 +11,30 @@ export type ItemBase = Readonly<{
   level: number
 }>
 
-export type BlockItem<K, T> = ItemBase &
-  BlockOptions &
-  Readonly<{
-    kind: 'block'
-    key: K
-    data: T
-  }>
-
-export type PlaceholderItem<K> = ItemBase &
-  Readonly<{
-    kind: 'placeholder'
-    parent: K
-    spacing?: never
-  }>
-
-export type GapItem = ItemBase &
-  Readonly<{
-    kind: 'gap'
-    before: ItemId
-    height: number
-    spacing?: never
-  }>
+export type RootItem<K> = ItemBase & BlockOptions & Readonly<{ kind: 'root'; key: K }>
+export type BlockItem<K, T> = ItemBase & BlockOptions & Readonly<{ kind: 'block'; key: K; data: T }>
+export type PlaceholderItem<K> = ItemBase & Readonly<{ kind: 'placeholder'; key?: never; parent: K; spacing?: never }>
+export type GapItem = ItemBase & Readonly<{ kind: 'gap'; key?: never; before: ItemId; height: number; spacing?: never }>
 
 export const RootItemId = 'root' as ItemId
+
+export function createRootItem<K, T>(root: RootBlock<K, T>): RootItem<K> {
+  return {
+    id: RootItemId,
+    level: 0,
+    kind: 'root',
+    key: root.key,
+    get spacing() {
+      return root.spacing
+    },
+    get tag() {
+      return root.tag
+    },
+    get accepts() {
+      return root.accepts ?? []
+    },
+  }
+}
 
 export function createBlockItem<K, T>(block: Block<K, T>, level: Accessor<number>): BlockItem<K, T> {
   return {

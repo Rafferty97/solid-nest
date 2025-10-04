@@ -1,25 +1,26 @@
-import { RootBlock } from './Block'
 import { calculateLayout } from './calculateLayout'
+import { Item, ItemId, RootItem } from './Item'
 import { Place } from './events'
-import { Item, ItemId } from './Item'
 import { BlockMeasurements } from './measure'
 
 export function* getInsertionPoints<K, T>(
-  root: RootBlock<K, T>,
   items: Item<K, T>[],
   tags: string[],
   measures: Map<ItemId, BlockMeasurements>,
   options: { defaultSpacing: number },
 ) {
   const layout = calculateLayout(items, id => measures.get(id), options)
-  const stack = [{ key: root.key, accepts: root.accepts ?? [] }]
 
-  for (const item of items) {
+  const iter = items[Symbol.iterator]()
+  const root = iter.next().value as RootItem<K>
+  const stack = [{ key: root.key, accepts: root.accepts }]
+
+  for (const item of iter) {
     const { id, level } = item
 
     // Push to stack for child items
     if (item.kind === 'block') {
-      stack[level + 1] = { key: item.key, accepts: item.accepts }
+      stack[level] = { key: item.key, accepts: item.accepts }
     }
 
     // Check there's a layout
@@ -27,7 +28,7 @@ export function* getInsertionPoints<K, T>(
     if (!rect) continue
 
     // Check that this items's parent accepts the dragged item(s)
-    const parent = stack[level]!
+    const parent = stack[level - 1]!
     if (tags.find(tag => !parent.accepts.includes(tag))) {
       continue
     }

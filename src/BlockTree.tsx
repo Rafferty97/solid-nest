@@ -122,7 +122,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     const items = itemsWithoutDragged()
     const rects = measureBlocks(RootItemId, itemElements)
 
-    return [...getInsertionPoints(props.root, items, state.tags, rects, options())]
+    return [...getInsertionPoints(items, state.tags, rects, options())]
   })
 
   const insertion = createMemo(() => {
@@ -423,7 +423,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
 
   return (
     <div
-      ref={el => itemElements.set(RootItemId, el)}
+      data-kind="root"
       onFocusOut={ev => {
         if (ev.relatedTarget === topElement) return
         props.onSelectionChange?.({
@@ -437,13 +437,24 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       onPaste={handlePaste}
       style={{
         position: 'relative',
-        height: containerHeight(),
+        // height: containerHeight(),
         '--bt-spacing': `${options().defaultSpacing}px`,
         '--bt-duration': `${options().transitionDuration}ms`,
+        'box-sizing': 'border-box',
       }}
     >
-      <div ref={topElement} tabIndex={-1} />
-      {renderItems(items, undefined, styles)}
+      <div
+        ref={el => itemElements.set(RootItemId, el)}
+        style={{
+          ...innerStyle(styles().get(RootItemId)),
+          '--bt-spacing': `${props.root.spacing ?? options().defaultSpacing}px`,
+          position: 'static',
+        }}
+      >
+        <div ref={topElement} tabIndex={-1} />
+        {renderItems(() => items().slice(1), undefined, styles)}
+      </div>
+      {/* Drag ghost */}
       <Show when={dragState()} keyed>
         {state => {
           const items = createMemo(() => insertPlaceholders(props.root.key, blockItems()))
