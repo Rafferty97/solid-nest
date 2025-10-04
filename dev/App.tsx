@@ -43,8 +43,8 @@ const App: Component = () => {
       key: `block${nextId++}`,
       data: `Block ${nextId}`,
     }
-    const parent = 'root'
-    // const parent = root.children[0]?.key!
+    // const parent = 'root'
+    const parent = root.children[0]?.key!
     model.onInsert({ blocks: [block], place: { parent, before: null } })
   }
 
@@ -53,7 +53,7 @@ const App: Component = () => {
       <BlockTree
         {...model}
         placeholder={() => <div class={styles.placeholder}>nothing here</div>}
-        transitionDuration={2500}
+        // transitionDuration={2500}
       >
         {block => (
           <div
