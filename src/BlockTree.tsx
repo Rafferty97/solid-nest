@@ -50,6 +50,11 @@ export type BlockTreeProps<K, T> = {
   defaultSpacing?: number
   /** Duration of transition animations, in milliseconds. */
   transitionDuration?: number
+  /**
+   * Forces the container to maintain a fixed height while dragging is in progress;
+   * useful for preventing odd behaviour when the component is inside a scrollable element.
+   */
+  fixedHeightWhileDragging?: boolean
 }
 
 export interface BlockProps<K, T> {
@@ -397,7 +402,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
   })
 
   const containerHeight = createMemo(() => {
-    if (dragState() != null) {
+    if (dragState() != null && props.fixedHeightWhileDragging) {
       const root = measureBlock(itemElements.get(RootItemId)!)
       return `${root.outer.height}px`
     } else {
@@ -445,7 +450,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       onPaste={handlePaste}
       style={{
         position: 'relative',
-        // height: containerHeight(),
+        height: containerHeight(),
         '--bt-spacing': `${options().defaultSpacing}px`,
         '--bt-duration': `${options().transitionDuration}ms`,
         'box-sizing': 'border-box',
