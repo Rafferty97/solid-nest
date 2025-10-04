@@ -39,7 +39,7 @@ export function createAnimations<K, T>(
 
     // Cleanup
     yield options().transitionDuration + 100
-    setStyles(new Map())
+    // setStyles(new Map())
   }
 
   const saveItems = () => untrack(input).map(item => ({ ...item }))

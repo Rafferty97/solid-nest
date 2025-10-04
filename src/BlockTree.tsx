@@ -334,7 +334,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
             }}
             startDrag={startDrag}
           >
-            {renderItems(children, styles)}
+            {renderItems(children, () => styles?.().get(item.id)?.footer, styles)}
           </Dynamic>
         )}
         {item.kind === 'placeholder' && <Dynamic component={placeholder} parent={item.parent} />}
@@ -350,7 +350,11 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     return sliced.slice(0, count < 0 ? undefined : count)
   }
 
-  const renderItems = (items: Accessor<Item<K, T>[]>, styles: Accessor<Map<string, ItemStyles>> | undefined) => {
+  const renderItems = (
+    items: Accessor<Item<K, T>[]>,
+    footer: Accessor<JSX.CSSProperties | undefined> | undefined,
+    childStyles: Accessor<Map<string, ItemStyles>> | undefined,
+  ) => {
     const mappedItems = mapArray(items, (item, index) => {
       const children = () => getChildren(item, index, items)
       return { item, children }
@@ -360,7 +364,8 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
 
     return (
       <div data-children>
-        <For each={rootItems()}>{({ item, children }) => renderItem(item, children, styles)}</For>
+        <For each={rootItems()}>{({ item, children }) => renderItem(item, children, childStyles)}</For>
+        <div data-kind="spacer" style={footer?.()} />
       </div>
     )
   }
@@ -437,7 +442,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       }}
     >
       <div ref={topElement} tabIndex={-1} />
-      {renderItems(items, styles)}
+      {renderItems(items, undefined, styles)}
       <Show when={dragState()} keyed>
         {state => {
           const items = createMemo(() => insertPlaceholders(props.root.key, blockItems()))

@@ -1,31 +1,26 @@
-[data-children]::after {
-    display: block;
-    content: "";
-    margin-top: var(--bt-offset);
-    transition: margin-top var(--bt-transition);
-}
-
-[data-measuring] [data-children]::after {
-    display: none;
-}
-
 [data-children] > * + * {
-    margin-top: var(--bt-spacing);
+  margin-top: var(--bt-spacing);
 }
 
-[data-children] > * + [data-kind="placeholder"] {
-    margin-top: 0;
+[data-children] > [data-kind='placeholder'],
+[data-children] > [data-kind='spacer'] {
+  margin-top: 0;
 }
 
-[data-kind] + [data-kind="placeholder"]:not([data-measuring]) {
-    display: none;
+[data-kind] + [data-kind='placeholder']:not([data-measuring]) {
+  display: none;
+}
+
+[data-measuring] [data-children] > [data-kind='spacer'] {
+  display: none;
 }
 
 .bt-ghost-container {
-    /* fixed right-0 left-0 z-100 shadow-lg */
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 100;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -4px rgba(0, 0, 0, 0.1);
 }

@@ -4,8 +4,9 @@ import { BlockMeasurements } from './measure'
 import { calculateLayout } from './calculateLayout'
 
 export interface ItemStyles {
-  inner: JSX.CSSProperties
   outer: JSX.CSSProperties
+  inner: JSX.CSSProperties
+  footer: JSX.CSSProperties
 }
 
 export function calculateTransitionStyles<K>(
@@ -44,9 +45,7 @@ export function calculateTransitionStyles<K>(
       top: '0',
       transform: `translate(${offset[0] - parentOffset[0]}px, ${offset[1] - parentOffset[1]}px)`,
       width: `${prev.width}px`,
-      '--bt-offset': `${prev.height - next.height}px`,
       transition: undefined,
-      '--bt-transition': undefined,
       'box-sizing': 'border-box',
     }
 
@@ -56,14 +55,22 @@ export function calculateTransitionStyles<K>(
       top: '0',
       transform: '',
       width: `${next.width}px`,
-      '--bt-offset': '0px',
       transition: 'transform var(--bt-duration), width var(--bt-duration)',
-      '--bt-transition': 'var(--bt-duration)',
       'box-sizing': 'border-box',
     }
 
-    invert.set(id, { outer, inner: innerFrom })
-    play.set(id, { outer, inner: innerTo })
+    const footerFrom: JSX.CSSProperties = {
+      transition: undefined,
+      'margin-top': `${prev.height - next.height}px`,
+    }
+
+    const footerTo: JSX.CSSProperties = {
+      transition: 'var(--bt-duration)',
+      'margin-top': '0px',
+    }
+
+    invert.set(id, { outer, inner: innerFrom, footer: footerFrom })
+    play.set(id, { outer, inner: innerTo, footer: footerTo })
   }
 
   return { invert, play }
