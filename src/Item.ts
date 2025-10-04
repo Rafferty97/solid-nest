@@ -28,6 +28,7 @@ export type PlaceholderItem<K> = ItemBase &
 export type GapItem = ItemBase &
   Readonly<{
     kind: 'gap'
+    before: ItemId
     height: number
     spacing?: never
   }>
@@ -66,11 +67,16 @@ export function createPlaceholderItem<K>(level: number, parent: K): PlaceholderI
   }
 }
 
-export function createGapItem(level: number, height: number): GapItem {
+export function isPlaceholderId(id: ItemId): boolean {
+  return id.startsWith('p-')
+}
+
+export function createGapItem(level: number, before: ItemId, height: number): GapItem {
   return {
     id: `gap` as ItemId,
     level,
     kind: 'gap',
+    before,
     height,
   }
 }

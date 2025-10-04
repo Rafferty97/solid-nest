@@ -1,5 +1,5 @@
 import { JSX } from 'solid-js'
-import { Item, ItemId } from './Item'
+import { isPlaceholderId, Item, ItemId } from './Item'
 import { BlockMeasurements } from './measure'
 import { calculateLayout } from './calculateLayout'
 
@@ -19,6 +19,21 @@ export function calculateTransitionStyles<K>(
   const prevRects = calculateLayout(prevItems, id => prevMeasures.get(id) ?? nextMeasures.get(id), options)
   const nextRects = calculateLayout(nextItems, id => nextMeasures.get(id) ?? prevMeasures.get(id), options)
 
+  // Special treatment for gaps
+  const GapItemId = 'gap' as ItemId
+  const [prevGap, nextGap] = [prevRects.get(GapItemId), nextRects.get(GapItemId)]
+  if (!prevGap && nextGap) {
+    const calcHeight = () => {
+      const itemId = nextItems.find(item => item.kind === 'gap')?.before
+      if (!itemId) return 0
+      const [prevItem, nextItem] = [prevRects.get(itemId), nextRects.get(itemId)]
+      if (!prevItem || !nextItem) return 0
+      const prop = isPlaceholderId(itemId) ? ('bottom' as const) : ('y' as const)
+      return nextGap.height + (prevItem[prop] - nextItem[prop])
+    }
+    prevRects.set(GapItemId, new DOMRect(nextGap.x, nextGap.y, nextGap.width, calcHeight()))
+  }
+
   const invert = new Map<string, ItemStyles>()
   const play = new Map<string, ItemStyles>()
   const parentOffsets: (readonly [number, number])[] = []
@@ -28,7 +43,7 @@ export function calculateTransitionStyles<K>(
     const next = nextRects.get(id)
     if (!prev || !next) continue
 
-    const offset = [prev.left - next.left, prev.top - next.top] as const
+    const offset = [prev.x - next.x, prev.y - next.y] as const
     const parentOffset = parentOffsets[level - 1] ?? [0, 0]
     parentOffsets[level] = offset
 
