@@ -41,7 +41,7 @@ export type BlockTreeProps<K, T> = {
   /** Fired when blocks are removed. */
   onRemove?: (event: RemoveEvent<K>) => void
   /** Optional custom dropzone component. */
-  dropzone?: Component<{ style?: JSX.CSSProperties }>
+  dropzone?: Component<{}>
   /** Optional custom placeholder component. */
   placeholder?: Component<{ parent: K }>
   /** Component used to render blocks. */
@@ -336,8 +336,8 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
         )}
         {item.kind === 'placeholder' && <Dynamic component={placeholder} parent={item.parent} />}
         {item.kind === 'gap' && (
-          <div style={{ 'z-index': 50, ...placeholderStyle(styles?.().get(item.id)) }}>
-            <Dynamic component={dropzone} style={{ height: '100%' }} />
+          <div style={{ 'z-index': 50, height: `${item.height}px`, ...placeholderStyle(styles?.().get(item.id)) }}>
+            <Dynamic component={dropzone} />
           </div>
         )}
       </div>
