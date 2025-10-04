@@ -102,7 +102,7 @@ export function placeholderStyle(state?: AnimationState): JSX.CSSProperties {
       : '',
     transform: `translate(${state.deltaPos.x}px, ${state.deltaPos.y}px)`,
     width: `${state.size.x + state.deltaSize.x}px`,
-    height: `${state.size.y + state.deltaSize.y}px`,
+    height: `${Math.max(state.size.y + state.deltaSize.y, 0)}px`,
     'box-sizing': 'border-box',
   }
 }
