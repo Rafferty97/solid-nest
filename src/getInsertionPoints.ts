@@ -9,7 +9,7 @@ export function* getInsertionPoints<K, T>(
   measures: Map<ItemId, BlockMeasurements>,
   options: { defaultSpacing: number },
 ) {
-  const layout = calculateLayout(items, id => measures.get(id), options)
+  const layout = calculateLayout(items, id => measures.get(id), { ...options, skipHidden: true })
 
   const iter = items[Symbol.iterator]()
   const root = iter.next().value as RootItem<K>

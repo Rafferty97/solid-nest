@@ -4,7 +4,7 @@ import { BlockMeasurements } from './measure'
 export function calculateLayout<K>(
   items: Item<K>[],
   measureItem: (id: ItemId) => BlockMeasurements | undefined,
-  opts: { defaultSpacing: number },
+  opts: { skipHidden?: boolean; defaultSpacing: number },
 ) {
   // finished blocks
   const output = new Map<ItemId, DOMRect>()
@@ -39,7 +39,7 @@ export function calculateLayout<K>(
   for (const { id, kind, level, spacing } of items) {
     if (level > nextVisibleLevel) continue
 
-    const { margin, inner: children } = measureItem(id) ?? {}
+    const { margin, inner } = measureItem(id) ?? {}
 
     // Check whether this is the first block in its parent
     const isFirst = stack.length <= level
@@ -69,7 +69,7 @@ export function calculateLayout<K>(
       nextWidth -= margin.left + margin.right
     }
 
-    nextVisibleLevel = level + (children ? 1 : 0)
+    nextVisibleLevel = level + (opts.skipHidden && !inner ? 0 : 1)
   }
 
   // Close remaining blocks

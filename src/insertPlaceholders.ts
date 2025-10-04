@@ -11,11 +11,11 @@ export function insertPlaceholders<K, T>(root: K, input: Item<K, T>[]): Item<K, 
     output.push(item)
 
     if (item.kind === 'block') {
-      stack[item.level + 1] = item.key
+      stack[item.level] = item.key
     }
 
     for (let level = item.level + (item.kind === 'block' ? 1 : 0); level > (nextItem?.level ?? 0); level--) {
-      output.push(createPlaceholderItem(level, stack[level]!))
+      output.push(createPlaceholderItem(level, stack[level - 1]!))
     }
   }
 
