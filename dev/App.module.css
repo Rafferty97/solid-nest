@@ -5,6 +5,9 @@
 }
 
 .block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   padding: 10px;
   background: white;
   border: 1px solid #bbb;

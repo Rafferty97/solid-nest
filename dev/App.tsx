@@ -62,10 +62,9 @@ const App: Component = () => {
             draggable={true}
             onDragStart={block.startDrag}
           >
-            {block.data}
-            <div style={{ height: '10px' }} />
+            <div>{block.data}</div>
             {block.children}
-            Footer
+            <div>Footer</div>
           </div>
         )}
       </BlockTree>
