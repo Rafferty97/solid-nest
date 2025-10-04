@@ -452,7 +452,11 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
         }}
       >
         <div ref={topElement} tabIndex={-1} />
-        {renderItems(() => items().slice(1), undefined, styles)}
+        {renderItems(
+          () => items().slice(1),
+          () => footerStyle(styles().get(RootItemId)),
+          styles,
+        )}
       </div>
       {/* Drag ghost */}
       <Show when={dragState()} keyed>
