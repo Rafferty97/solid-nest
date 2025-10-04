@@ -25,7 +25,6 @@ import { createAnimations } from './createAnimations'
 import { AnimationState, footerStyle, innerStyle, outerStyle, placeholderStyle } from './calculateTransitionStyles'
 import { notNull } from './util/notNull'
 import { Dropzone } from './Dropzone'
-import './BlockTree.css'
 
 export type BlockTreeProps<K, T> = {
   /** The root block. */
@@ -67,9 +66,54 @@ export interface BlockProps<K, T> {
   startDrag: (ev: MouseEvent) => void
 }
 
+// CSS injection - only inject once across all component instances
+let cssInjected = false
+const injectCSS = () => {
+  if (cssInjected) return
+  cssInjected = true
+
+  const styleId = 'blocktree-styles'
+  if (document.getElementById(styleId)) return
+
+  const style = document.createElement('style')
+  style.id = styleId
+  style.textContent = `
+[data-children] > * + * {
+  margin-top: var(--bt-spacing);
+}
+
+[data-children] > [data-kind='placeholder'],
+[data-children] > [data-kind='spacer'] {
+  margin-top: 0;
+}
+
+[data-kind] + [data-kind='placeholder']:not([data-measuring]) {
+  display: none;
+}
+
+[data-measuring] [data-children] > [data-kind='spacer'] {
+  display: none;
+}
+
+.bt-ghost-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+  `.trim()
+
+  document.head.appendChild(style)
+}
+
 export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
   const itemElements = new Map<ItemId, HTMLElement>()
   let topElement!: HTMLDivElement
+
+  onMount(injectCSS)
 
   const options = createMemo(() => ({
     transitionDuration: props.transitionDuration ?? 200,
