@@ -49,8 +49,6 @@ export type BlockTreeProps<K, T> = {
   dropzone?: Component<{}>
   /** Optional custom placeholder component. */
   placeholder?: Component<{ parent: K }>
-  /** Component used to render blocks. */
-  children: Component<BlockProps<K, T>>
   /** Default spacing between sibling blocks, in pixels. */
   defaultSpacing?: number
   /** Duration of transition animations, in milliseconds. */
@@ -62,6 +60,8 @@ export type BlockTreeProps<K, T> = {
   fixedHeightWhileDragging?: boolean
   /** Whether to allow mutliple blocks to be selected at once; defaults to `true`. */
   multiselect?: boolean
+  /** Component used to render blocks. */
+  children: Component<BlockProps<K, T>>
 }
 
 export interface BlockProps<K, T> {
@@ -69,7 +69,6 @@ export interface BlockProps<K, T> {
   data: T
   selected: boolean
   dragging: boolean
-  style?: JSX.CSSProperties | string
   children: JSX.Element
   startDrag: (ev: MouseEvent) => void
 }

@@ -1,4 +1,4 @@
-export type Block<K, T> = Partial<BlockOptions> & {
+export type Block<K, T> = BlockOptions & {
   /**
    * Unique identifier of the block.
    * Identifiers must remain unique when converted to strings.
@@ -10,7 +10,7 @@ export type Block<K, T> = Partial<BlockOptions> & {
   children?: Block<K, T>[]
 }
 
-export type RootBlock<K, T> = Partial<BlockOptions> & {
+export type RootBlock<K, T> = BlockOptions & {
   /**
    * Unique identifier of the block.
    * Identifiers must remain unique when converted to strings.
@@ -30,5 +30,5 @@ export type BlockOptions = {
    * */
   tag?: string
   /** The set of tags that this block accepts as children. */
-  accepts: string[]
+  accepts?: string[]
 }

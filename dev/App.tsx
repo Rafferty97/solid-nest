@@ -58,7 +58,6 @@ const App: Component = () => {
         {block => (
           <div
             class={[styles.block, block.selected ? styles.selected : ''].join(' ')}
-            style={block.style}
             draggable={true}
             onDragStart={block.startDrag}
           >

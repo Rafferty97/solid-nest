@@ -31,7 +31,7 @@ export function createRootItem<K, T>(root: RootBlock<K, T>): RootItem<K> {
       return root.tag
     },
     get accepts() {
-      return root.accepts ?? []
+      return root.accepts
     },
   }
 }

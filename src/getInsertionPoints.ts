@@ -29,7 +29,7 @@ export function* getInsertionPoints<K, T>(
 
     // Check that this items's parent accepts the dragged item(s)
     const parent = stack[level - 1]!
-    if (tags.find(tag => !parent.accepts.includes(tag))) {
+    if (tags.find(tag => !parent.accepts?.includes(tag))) {
       continue
     }
 
