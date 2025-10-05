@@ -21,7 +21,14 @@ import { measureBlock, measureBlocks } from './measure'
 import { insertPlaceholders } from './insertPlaceholders'
 import { getInsertionPoints } from './getInsertionPoints'
 import { createAnimations } from './createAnimations'
-import { AnimationState, footerStyle, innerStyle, outerStyle, placeholderStyle } from './calculateTransitionStyles'
+import {
+  AnimationState,
+  spacerStyle,
+  innerStyle,
+  outerStyle,
+  dropzoneStyle,
+  placeholderStyle,
+} from './calculateTransitionStyles'
 import {
   calculateSelectionMode,
   normaliseSelection,
@@ -344,15 +351,19 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
               dragging={itemProps.dragging === true}
               startDrag={startDrag}
             >
-              {renderItems(children, () => footerStyle(styles?.().get(item.id)), styles)}
+              {renderItems(children, () => spacerStyle(styles?.().get(item.id)), styles)}
             </Dynamic>
           </div>
         )}
-        {item.kind === 'placeholder' && <Dynamic component={placeholder} parent={item.parent} />}
+        {item.kind === 'placeholder' && (
+          <div class="bt-transition" style={placeholderStyle(styles?.().get(item.id))}>
+            <Dynamic component={placeholder} parent={item.parent} />
+          </div>
+        )}
         {item.kind === 'gap' && (
           <div
             class="bt-transition"
-            style={{ 'z-index': 50, height: `${item.height}px`, ...placeholderStyle(styles?.().get(item.id)) }}
+            style={{ 'z-index': 50, height: `${item.height}px`, ...dropzoneStyle(styles?.().get(item.id)) }}
           >
             <Dynamic component={dropzone} />
           </div>
@@ -370,7 +381,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
 
   const renderItems = (
     items: Accessor<Item<K, T>[]>,
-    footer: Accessor<JSX.CSSProperties | undefined> | undefined,
+    spacerStyle: Accessor<JSX.CSSProperties | undefined> | undefined,
     childStyles: Accessor<Map<string, AnimationState>> | undefined,
   ) => {
     const mappedItems = mapArray(items, (item, index) => {
@@ -383,7 +394,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     return (
       <div data-children>
         <For each={rootItems()}>{({ item, children }) => renderItem(item, children, childStyles)}</For>
-        <div data-kind="spacer" style={footer?.()} />
+        <div data-kind="spacer" style={spacerStyle?.()} />
       </div>
     )
   }
@@ -472,7 +483,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
         <div ref={topElement} tabIndex={-1} />
         {renderItems(
           () => items().slice(1),
-          () => footerStyle(styles().get(RootItemId)),
+          () => spacerStyle(styles().get(RootItemId)),
           styles,
         )}
         {/* This element forces the container to adapt its height based on the spacer inside `renderItems` */}

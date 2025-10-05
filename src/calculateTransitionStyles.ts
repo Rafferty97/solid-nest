@@ -9,6 +9,7 @@ export interface AnimationState {
   deltaPos: Vec2
   deltaSize: Vec2
   transition: boolean
+  level: number
 }
 
 export function calculateTransitionStyles<K>(
@@ -41,6 +42,11 @@ export function calculateTransitionStyles<K>(
   const play = new Map<ItemId, AnimationState>()
   const parents: Vec2[] = []
   const zeroAdjust = { x: 0, y: 0, width: 0, height: 0 }
+
+  const prevLevels = new Map<ItemId, number>()
+  for (const { id, level } of prevItems) {
+    prevLevels.set(id, level)
+  }
 
   for (const { id, level } of nextItems) {
     const prev = prevRects.get(id)
@@ -75,8 +81,10 @@ export function calculateTransitionStyles<K>(
     deltaPos.x -= parent.x
     deltaPos.y -= parent.y
 
-    invert.set(id, { size, deltaPos, deltaSize, transition: false })
-    play.set(id, { size, deltaPos: Vec2.Zero, deltaSize: Vec2.Zero, transition: true })
+    const maxLevel = Math.max(prevLevels.get(id) ?? level, level)
+
+    invert.set(id, { size, deltaPos, deltaSize, transition: false, level: maxLevel })
+    play.set(id, { size, deltaPos: Vec2.Zero, deltaSize: Vec2.Zero, transition: true, level: maxLevel })
   }
 
   return { invert, play }
@@ -102,10 +110,23 @@ export function innerStyle(state?: AnimationState): JSX.CSSProperties {
     transform: `translate(${state.deltaPos.x}px, ${state.deltaPos.y}px)`,
     width: `${state.size.x + state.deltaSize.x}px`,
     'box-sizing': 'border-box',
+    'z-index': state.level.toString(),
   }
 }
 
-export function footerStyle(state?: AnimationState): JSX.CSSProperties {
+export function placeholderStyle(state?: AnimationState): JSX.CSSProperties {
+  if (!state) return {}
+  return {
+    position: 'absolute',
+    left: '0',
+    top: '0',
+    transition: state.transition ? 'width var(--bt-duration)' : '',
+    width: `${state.size.x + state.deltaSize.x}px`,
+    'box-sizing': 'border-box',
+  }
+}
+
+export function spacerStyle(state?: AnimationState): JSX.CSSProperties {
   if (!state) return {}
   return {
     transition: state.transition ? `margin-top var(--bt-duration)` : '',
@@ -113,7 +134,7 @@ export function footerStyle(state?: AnimationState): JSX.CSSProperties {
   }
 }
 
-export function placeholderStyle(state?: AnimationState): JSX.CSSProperties {
+export function dropzoneStyle(state?: AnimationState): JSX.CSSProperties {
   if (!state) return {}
   return {
     position: 'absolute',

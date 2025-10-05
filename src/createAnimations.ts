@@ -49,7 +49,7 @@ export function createAnimations<K, T>(
   let prevItems = saveItems()
 
   createEffect(() => {
-    const nextItems = input().slice()
+    const nextItems = input().map(item => ({ ...item }))
     const fn = animate(prevItems, nextItems)
     prevItems = saveItems()
     setAnimationState({ step: 0, fn })
