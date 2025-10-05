@@ -514,6 +514,8 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
           () => footerStyle(styles().get(RootItemId)),
           styles,
         )}
+        {/* This element forces the container to adapt its height based on the spacer inside `renderItems` */}
+        <div style={{ 'margin-top': '-1px', 'padding-bottom': '1px' }} />
       </div>
       {/* Drag ghost */}
       <Show when={dragState()} keyed>
