@@ -5,7 +5,8 @@ export namespace Vec2 {
 }
 
 export type DragState<K> = {
-  items: K[]
+  keys: K[]
+  top: K
   offset: Vec2
   size: Vec2
   tags: string[]

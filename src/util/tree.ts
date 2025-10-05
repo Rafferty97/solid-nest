@@ -48,3 +48,7 @@ export function flattenTree<K, T>(root: Accessor<RootBlock<K, T>>): Accessor<Fla
     return out
   })
 }
+
+export function containsChild<K>(tree: Block<K, unknown>, id: K): boolean {
+  return tree.key === id || tree.children?.find(child => containsChild(child, id)) != null
+}

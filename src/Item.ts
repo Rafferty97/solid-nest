@@ -38,7 +38,7 @@ export function createRootItem<K, T>(root: RootBlock<K, T>): RootItem<K> {
 
 export function createBlockItem<K, T>(block: Block<K, T>, level: Accessor<number>): BlockItem<K, T> {
   return {
-    id: `b-${block.key}` as ItemId,
+    id: createBlockItemId(block.key),
     get level() {
       return level()
     },
@@ -57,6 +57,10 @@ export function createBlockItem<K, T>(block: Block<K, T>, level: Accessor<number
       return block.accepts ?? []
     },
   }
+}
+
+export function createBlockItemId<K>(key: K): ItemId {
+  return `b-${key}` as ItemId
 }
 
 export function createPlaceholderItem<K>(level: number, parent: K): PlaceholderItem<K> {

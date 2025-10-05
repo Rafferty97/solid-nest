@@ -13,9 +13,9 @@ import {
 } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { DragState, Vec2 } from './util/types'
-import { flattenTree } from './util/tree'
+import { containsChild, flattenTree } from './util/tree'
 import { Block, BlockOptions, RootBlock } from './Block'
-import { createGapItem, Item, ItemId, RootItemId } from './Item'
+import { createBlockItemId, createGapItem, Item, ItemId, RootItemId } from './Item'
 import { InsertEvent, RemoveEvent, ReorderEvent, SelectionEvent } from './events'
 import { measureBlock, measureBlocks } from './measure'
 import { insertPlaceholders } from './insertPlaceholders'
@@ -162,7 +162,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       }
       nextLevel = undefined
 
-      if (state.items.includes(item.key)) {
+      if (state.keys.includes(item.key)) {
         nextLevel = item.level
         continue
       }
@@ -240,7 +240,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
 
       batch(() => {
         if (insert) {
-          props.onReorder?.({ keys: drag.items, place: insert.place })
+          props.onReorder?.({ keys: drag.keys, place: insert.place })
         }
         setDragState(undefined)
       })
@@ -269,19 +269,23 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       ev.preventDefault()
       ev.stopPropagation()
 
-      const element = itemElements.get(item.id)
+      const keys = normaliseSelection(items, selection())
+      const top = keys.find(key => {
+        const block = blockMap().get(key)
+        return block != null && containsChild(block, item.key)
+      })
+      if (!top) return
+
+      const element = itemElements.get(createBlockItemId(top))
       if (!element) return
 
       const rect = measureBlock(element).outer
-      const keys = normaliseSelection(items, selection())
+      const offset = { x: rect.left - ev.clientX, y: rect.top - ev.clientY }
+      const size = { x: rect.width, y: rect.height }
+
       const tags = [...new Set(keys.map(key => blockMap().get(key)?.tag).filter(notNull))]
 
-      setDragState({
-        items: keys,
-        offset: { x: rect.left - ev.clientX, y: rect.top - ev.clientY },
-        size: { x: rect.width, y: rect.height },
-        tags: [...tags],
-      })
+      setDragState({ keys, top, offset, size, tags })
       updateMousePos(ev)
     }
 
@@ -479,9 +483,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       <Show when={dragState()} keyed>
         {state => {
           const items = createMemo(() => insertPlaceholders(props.root.key, blockItems()))
-          const index = createMemo(() =>
-            items().findIndex(item => item.kind === 'block' && state.items.includes(item.key)),
-          )
+          const index = createMemo(() => items().findIndex(item => item.kind === 'block' && item.key === state.top))
           const firstItem = createMemo(() => items()[index()])
           const children = createMemo(() => {
             const item = firstItem()
