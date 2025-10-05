@@ -68,17 +68,21 @@ export function updateSelection<K>(
     const items_ = items()
     const i = items_.findIndex(item => item.key === first)
     const j = items_.findIndex(item => item.key === key)
-    if (i < 0 || j < 0) {
+    if (!items_[i] || !items_[j] || items_[i].level !== items_[j].level) {
       return { mode, focus: prev.slice() }
     }
 
-    const range = items_.slice(Math.min(i, j), Math.max(i, j) + 1).filter(item => item.kind === 'block')
-    const level = range[0]!.level
-    if (range.find(item => item.level !== level)) {
-      return { mode, focus: prev.slice() }
+    const keys: K[] = []
+    const level = items_[i].level
+    for (let k = Math.min(i, j); k <= Math.max(i, j); k++) {
+      const item = items_[k]
+      if (item?.kind !== 'block' || item.level > level) continue
+      if (item.level < level) {
+        return { mode, focus: prev.slice() }
+      }
+      keys.push(item.key)
     }
 
-    const keys = range.map(item => item.key)
     if (i > j) keys.reverse()
 
     return { mode, focus: keys }
