@@ -4,7 +4,10 @@
 
 # solid-nest
 
-[![pnpm](https://img.shields.io/badge/maintained%20with-pnpm-cc00ff.svg?style=for-the-badge&logo=pnpm)](https://pnpm.io/)
+[![npm version](https://img.shields.io/npm/v/solid-nest.svg?style=flat)](https://www.npmjs.com/package/solid-nest)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/solid-nest?style=flat)](https://bundlephobia.com/package/solid-nest)
+[![license](https://img.shields.io/npm/l/solid-nest.svg?style=flat)](https://github.com/Rafferty97/solid-nest/blob/main/LICENSE)
+[![pnpm](https://img.shields.io/badge/maintained%20with-pnpm-cc00ff.svg?style=flat&logo=pnpm)](https://pnpm.io/)
 
 A powerful SolidJS library for building hierarchical block-based UIs with drag-and-drop, multi-selection, and smooth animations.
 
@@ -12,6 +15,7 @@ Care has been taken to ensure everything "just works" with minimal configuration
 
 ## Features
 
+- **Tiny bundle size** - Only ~5kB minified + gzipped!
 - **Drag-and-drop** - Intuitive block reordering with visual feedback
 - **Unlimited nesting** - Create deeply nested hierarchies
 - **Multi-selection** - Select and move multiple blocks at once
