@@ -43,6 +43,7 @@
   "scripts": {
     "dev": "vite serve dev",
     "build": "tsup",
+    "build:demo": "vite build dev",
     "test": "concurrently pnpm:test:*",
     "test:client": "vitest",
     "test:ssr": "pnpm run test:client --mode ssr",

@@ -3,6 +3,7 @@ import path from 'node:path'
 import solidPlugin from 'vite-plugin-solid'
 
 export default defineConfig({
+  base: '/projects/solid-nest/',
   resolve: {
     alias: {
       src: path.resolve(__dirname, '../src'),
@@ -33,5 +34,6 @@ export default defineConfig({
   },
   build: {
     target: 'esnext',
+    outDir: '../dist-demo',
   },
 })
