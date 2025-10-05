@@ -139,7 +139,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       output.set(node.key, node)
       node.children?.forEach(insert)
     }
-    props.root.children.forEach(insert)
+    props.root.children?.forEach(insert)
     return output
   })
 
