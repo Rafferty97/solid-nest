@@ -48,8 +48,7 @@ pnpm add solid-nest
 ## Quick Start
 
 ```tsx
-import { BlockTree, RootBlock } from 'solid-nest'
-import { createTree } from './model' // See "State Management" below
+import { BlockTree, RootBlock, createBlockTree } from 'solid-nest'
 
 function App() {
   // Define your block structure
@@ -62,11 +61,15 @@ function App() {
     ],
   }
 
-  // Create a model to manage state
-  const model = createTree(root)
+  // This is a utility function that creates a store for the UI state
+  // and the necessary event handlers to update it
+  //
+  // See the "State Management" section below
+  const props = createBlockTree(root)
 
   return (
-    <BlockTree {...model}>
+    <BlockTree {...props}>
+      {/* Defines how each block in the tree should be rendered */}
       {block => (
         <div
           class="border rounded p-4"
