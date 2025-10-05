@@ -1,6 +1,5 @@
-import { type Component } from 'solid-js'
-import { BlockTree, RootBlock } from 'src'
-import { createTree } from './model'
+import { createUniqueId, type Component } from 'solid-js'
+import { BlockTree, RootBlock, createBlockTree } from 'src'
 import styles from './App.module.css'
 
 const App: Component = () => {
@@ -35,23 +34,21 @@ const App: Component = () => {
     accepts: ['one', 'two'],
   }
 
-  const model = createTree(root)
+  const props = createBlockTree(root)
 
-  let nextId = 0
   const appendBlock = () => {
-    const block = {
-      key: `block${nextId++}`,
-      data: `Block ${nextId}`,
-    }
-    // const parent = 'root'
-    const parent = root.children[0]?.key!
-    model.onInsert({ blocks: [block], place: { parent, before: null } })
+    const key = createUniqueId()
+    const block = { key, data: `Block ${key}` }
+    props.onInsert({
+      blocks: [block],
+      place: { parent: 'root', before: null },
+    })
   }
 
   return (
     <div class={styles.container}>
       <BlockTree
-        {...model}
+        {...props}
         placeholder={() => <div class={styles.placeholder}>nothing here</div>}
         // transitionDuration={2500}
       >

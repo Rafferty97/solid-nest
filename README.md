@@ -196,7 +196,7 @@ The `EventHandler` type referenced in the `BlockTree` props table is simply a ca
 export type EventHandler<E> = (event: E) => void
 ```
 
-### SelectionEvent
+### `SelectionEvent`
 
 Fired when blocks are selected or deselected.
 
@@ -220,7 +220,7 @@ The `mode` property indicates how the selection was modified:
 | **Range** | `'range'` | Shift + Click | Selects all blocks between the first selected block and the clicked block (at the same nesting level) |
 | **Deselect** | `'deselect'` | Focus lost | Deselects all blocks |
 
-### InsertEvent
+### `InsertEvent`
 
 Fired when new blocks are inserted.
 
@@ -234,7 +234,7 @@ type InsertEvent = {
 }
 ```
 
-### ReorderEvent
+### `ReorderEvent`
 
 Fired when blocks are reordered via drag-and-drop:
 
@@ -248,7 +248,7 @@ type ReorderEvent = {
 }
 ```
 
-### RemoveEvent
+### `RemoveEvent`
 
 Fired when blocks are removed (e.g., via the Delete key):
 
@@ -260,109 +260,36 @@ type RemoveEvent = {
 
 ## State Management
 
-The library is unopinionated about state management. Here's a reference implementation using SolidJS stores:
+The library is unopinionated about state management, but it does provide a utility function called `createBlockTree`
+which creates a store for the block tree state and a set of event handlers that update this state,
+which can be directly provided to a `BlockTree` like so:
 
-```tsx
-import { createSignal } from 'solid-js'
-import { createStore, produce } from 'solid-js/store'
-import { Block, RootBlock, InsertEvent, ReorderEvent, RemoveEvent } from 'solid-nest'
+```
+import { createUniqueId } from 'solid-js'
 
-export function createTree<K, T>(init: RootBlock<K, T>) {
-  const [root, setRoot] = createStore(init)
-  const [selection, setSelection] = createSignal<K[]>([])
+const props = createBlockTree({ key: 'root', children: [] })
 
-  // Helper: recursively find a node and perform an operation
-  const findNode = (
-    node: Block<K, T> | RootBlock<K, T>,
-    targetKey: K,
-    operation: (node: Block<K, T> | RootBlock<K, T>) => boolean
-  ): boolean => {
-    if (node.key === targetKey) {
-      return operation(node)
-    }
-    if (node.children) {
-      for (const child of node.children) {
-        if (findNode(child, targetKey, operation)) return true
-      }
-    }
-    return false
-  }
-
-  // Helper: recursively remove blocks matching keys
-  const removeBlocks = (
-    node: Block<K, T> | RootBlock<K, T>,
-    keys: K[],
-    collect?: Block<K, T>[]
-  ) => {
-    if (!node.children) return
-    node.children = node.children.filter(child => {
-      if (keys.includes(child.key)) {
-        collect?.push(child)
-        return false
-      }
-      return true
-    })
-    node.children.forEach(child => removeBlocks(child, keys, collect))
-  }
-
-  // Helper: insert blocks at specified location
-  const insertBlocks = (
-    parentKey: K,
-    blocks: Block<K, T>[],
-    before: K | null
-  ) => {
-    findNode(root, parentKey, node => {
-      node.children ??= []
-      const index = before !== null
-        ? node.children.findIndex(c => c.key === before)
-        : -1
-      node.children.splice(
-        index < 0 ? node.children.length : index,
-        0,
-        ...blocks
-      )
-      return true
-    })
-  }
-
-  return {
-    root,
-    get selection() {
-      return selection()
-    },
-
-    onSelectionChange(event) {
-      setSelection(event.after)
-    },
-
-    onInsert(event: InsertEvent<K, T>) {
-      setRoot(produce(root => {
-        insertBlocks(event.place.parent, event.blocks, event.place.before)
-      }))
-    },
-
-    onReorder(event: ReorderEvent<K>) {
-      setRoot(produce(root => {
-        const blocks: Block<K, T>[] = []
-        removeBlocks(root, event.keys, blocks)
-        insertBlocks(event.place.parent, blocks, event.place.before)
-      }))
-    },
-
-    onRemove(event: RemoveEvent<K>) {
-      setRoot(produce(root => {
-        removeBlocks(root, event.keys)
-      }))
-    },
-  }
+const appendBlock = () => {
+  const key = createUniqueId()
+  const block = { key, data: `Block ${key}` }
+  props.onInsert({
+    blocks: [block],
+    place: { parent: 'root', before: null }
+  })
 }
+
+return (
+  <div>
+    <BlockTree {...props}>
+      {block => <BlockUI {...block} />}
+    </BlockTree>
+    <button onClick={appendBlock}>Add block</button>
+  </div>
+)
 ```
 
-This implementation:
-- Uses SolidJS's `createStore` for reactive state management
-- Extracts common tree operations into reusable helper functions
-- Handles all required events (`onSelectionChange`, `onInsert`, `onReorder`, `onRemove`)
-- Uses `produce` for immutable updates to the tree structure
+See [`createBlockTree.ts`](https://github.com/Rafferty97/solid-nest/blob/main/src/createBlockTree.ts) to get an idea
+for how you might implement your own state management system or integrate your existing one with `solid-nest`.
 
 ## Tag-Based Constraints
 
