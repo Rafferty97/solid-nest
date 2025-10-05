@@ -38,7 +38,7 @@ export function flattenTree<K, T>(root: Accessor<RootBlock<K, T>>): Accessor<Fla
     const out: FlattenTreeResult<K, T> = []
 
     out.push(createRootItem(root()))
-    for (const child of root().children) {
+    for (const child of root().children ?? []) {
       unroll(child, out, 1)
     }
 
