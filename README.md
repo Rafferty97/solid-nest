@@ -58,7 +58,7 @@ function App() {
           draggable={true}
           onDragStart={block.startDrag}
         >
-          <p>{block.data}<p>
+          <p>{block.data}</p>
           <div class="mt-4">
             {block.children}
           </div>
@@ -201,7 +201,7 @@ The `mode` property indicates how the selection was modified:
 | Mode | Value | Trigger | Behavior |
 |------|-------|---------|----------|
 | **Set** | `'set'` | Click (no modifiers) | Selects the clicked block, deselects all others |
-| **Toggle** | `'toggle'` | Cmd/Ctrl + click | Toggles the clicked block's selection state |
+| **Toggle** | `'toggle'` | Cmd/Ctrl + Click | Toggles the clicked block's selection state |
 | **Range** | `'range'` | Shift + Click | Selects all blocks between the first selected block and the clicked block (at the same nesting level) |
 | **Deselect** | `'deselect'` | Focus lost | Deselects all blocks |
 
@@ -380,7 +380,7 @@ const root: RootBlock<string, string> = {
 ## Custom placeholder and dropzone
 
 A placeholder is shown when a block has no children. By default, it just an empty `<div>` which takes up no space, but it can be changed to a custom component.
-The component recieves the `key` of the block it belongs to, allowing you to use different UIs for different blocks.
+The component receives the `key` of the block it belongs to, allowing you to use different UIs for different blocks.
 
 ```tsx
 const Placeholder = ({ parent }) => (
@@ -413,11 +413,7 @@ const Dropzone = () => (
 
 ## Keyboard Shortcuts
 
-Built-in keyboard/mouse support:
-
-- **Click** - Select block (deselects others)
-- **Cmd/Ctrl + Click** - Toggle block selection
-- **Shift + Click** - Select range of blocks
+The `BlockTree` component has built-in support for the following keyboard shortcuts:
 - **Delete** - Remove selected blocks
 - **Cmd/Ctrl + C** - Copy selected blocks (coming soon)
 - **Cmd/Ctrl + V** - Paste blocks (coming soon)
