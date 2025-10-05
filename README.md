@@ -143,23 +143,26 @@ type RootBlock<K, T> = {
 
 ### BlockTree Props
 
-The `BlockTree` component accepts various props to configure its behaviour:
+The `BlockTree` component accepts various props to configure its behaviour.
 
-| Prop | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `root` | `RootBlock<K, T>` | ✓ | | The root block of the tree |
-| `children` | `Component<BlockProps<K, T>>` | ✓ | | Render function for blocks |
+The only **required** props are `root` and `children`, though you'll almost certainly want to implement
+most if not all of the event handlers too, otherwise the block tree won't be editable.
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `root` | `RootBlock<K, T>` | *required* | The root block of the tree |
+| `children` | `Component<BlockProps<K, T>>` | *required* | Render function for blocks |
 | `selection` | `K[]` | | `[]` | Array of currently selected block keys |
-| `onSelectionChange` | `(event: SelectionEvent<K>) => void` | | | Called when selection changes |
-| `onInsert` | `(event: InsertEvent<K, T>) => void` | | | Called when blocks are inserted |
-| `onReorder` | `(event: ReorderEvent<K>) => void` | | | Called when blocks are reordered |
-| `onRemove` | `(event: RemoveEvent<K>) => void` | | | Called when blocks are removed |
-| `defaultSpacing` | `number` | | `12` | Default spacing between blocks (px) |
-| `transitionDuration` | `number` | | `200` | Animation duration (ms) |
-| `fixedHeightWhileDragging` | `boolean` | | `false` | Fix container height during drag operations |
-| `multiselect` | `boolean` | | `true` | Enable multi-selection |
-| `dropzone` | `Component<{}>` | | | Custom dropzone component |
-| `placeholder` | `Component<{ parent: K }>` | | | Custom placeholder component |
+| `onSelectionChange` | `EventHandler<SelectionEvent<K>>` | | Called when selection changes |
+| `onInsert` | `EventHandler<InsertEvent<K, T>>` | | Called when blocks are inserted |
+| `onReorder` | `EventHandler<ReorderEvent<K>>` | | Called when blocks are reordered |
+| `onRemove` | `EventHandler<RemoveEvent<K>>` | | Called when blocks are removed |
+| `defaultSpacing` | `number` | `12` | Default spacing between blocks (px) |
+| `transitionDuration` | `number` | `200` | Animation duration (ms) |
+| `fixedHeightWhileDragging` | `boolean` | `false` | Fix container height during drag operations |
+| `multiselect` | `boolean` | `true` | Enable multi-selection |
+| `dropzone` | `Component<{}>` | | Custom dropzone component |
+| `placeholder` | `Component<{ parent: K }>` | | Custom placeholder component |
 
 ### Block Render Props
 
@@ -184,6 +187,14 @@ The `BlockTree` component emits various kinds of events in response to drag-and-
 Keep in mind that the state of the block tree won't actually update unless these events are listened to,
 and the state is updated accordingly. In other words, `BlockTree` is a controlled component and state management
 is left up to the consumer.
+
+### Event handler
+
+The `EventHandler` type referenced in the `BlockTree` props table is simply a callback function:
+
+```ts
+export type EventHandler<E> = (event: E) => void
+```
 
 ### SelectionEvent
 

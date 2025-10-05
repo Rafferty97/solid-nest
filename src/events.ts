@@ -1,6 +1,8 @@
 import { Block } from './Block'
 import { SelectionMode } from './selection'
 
+export type EventHandler<E> = (event: E) => void
+
 export type SelectionEvent<K> = {
   /** The key of the block that was selected/deselected. */
   readonly key?: K

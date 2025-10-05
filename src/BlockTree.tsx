@@ -16,7 +16,7 @@ import { DragState, Vec2 } from './util/types'
 import { containsChild, flattenTree } from './util/tree'
 import { Block, BlockOptions, RootBlock } from './Block'
 import { createBlockItemId, createGapItem, Item, ItemId, RootItemId } from './Item'
-import { InsertEvent, RemoveEvent, ReorderEvent, SelectionEvent } from './events'
+import { EventHandler, InsertEvent, RemoveEvent, ReorderEvent, SelectionEvent } from './events'
 import { measureBlock, measureBlocks } from './measure'
 import { insertPlaceholders } from './insertPlaceholders'
 import { getInsertionPoints } from './getInsertionPoints'
@@ -40,11 +40,11 @@ export type BlockTreeProps<K, T> = {
   /** Fired when a block is selected or deselected. */
   onSelectionChange?: (event: SelectionEvent<K>) => void
   /** Fired when blocks are inserted. */
-  onInsert?: (event: InsertEvent<K, T>) => void
+  onInsert?: EventHandler<InsertEvent<K, T>>
   /** Fired when blocks are reordered. */
-  onReorder?: (event: ReorderEvent<K>) => void
+  onReorder?: EventHandler<ReorderEvent<K>>
   /** Fired when blocks are removed. */
-  onRemove?: (event: RemoveEvent<K>) => void
+  onRemove?: EventHandler<RemoveEvent<K>>
   /** Optional custom dropzone component. */
   dropzone?: Component<{}>
   /** Optional custom placeholder component. */
