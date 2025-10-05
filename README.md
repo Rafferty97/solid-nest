@@ -141,70 +141,80 @@ type RootBlock<K, T> = {
 
 The `BlockTree` component accepts various props to configure its behaviour:
 
-*FIXME: Change this to a table*
-
-```tsx
-<BlockTree
-  root={root}                          // Required: Root block
-  selection={['key1', 'key2']}         // Optional: Selected block keys
-  onSelectionChange={event => {}}      // Optional: Selection change handler
-  onInsert={event => {}}               // Optional: Block insertion handler
-  onReorder={event => {}}              // Optional: Block reorder handler
-  onRemove={event => {}}               // Optional: Block removal handler
-  dropzone={DropzoneComponent}         // Optional: Custom dropzone
-  placeholder={PlaceholderComponent}   // Optional: Custom placeholder
-  defaultSpacing={12}                  // Optional: Default spacing (px)
-  transitionDuration={200}             // Optional: Animation duration (ms)
-  fixedHeightWhileDragging={false}     // Optional: Fix height during drag
-  multiselect={true}                   // Optional: Enable multi-selection
->
-  {block => <YourBlockComponent {...block} />}
-</BlockTree>
-```
+| Prop | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `root` | `RootBlock<K, T>` | ✓ | | The root block of the tree |
+| `children` | `Component<BlockProps<K, T>>` | ✓ | | Render function for blocks |
+| `selection` | `K[]` | | `[]` | Array of currently selected block keys |
+| `onSelectionChange` | `(event: SelectionEvent<K>) => void` | | | Called when selection changes |
+| `onInsert` | `(event: InsertEvent<K, T>) => void` | | | Called when blocks are inserted |
+| `onReorder` | `(event: ReorderEvent<K>) => void` | | | Called when blocks are reordered |
+| `onRemove` | `(event: RemoveEvent<K>) => void` | | | Called when blocks are removed |
+| `defaultSpacing` | `number` | | `12` | Default spacing between blocks (px) |
+| `transitionDuration` | `number` | | `200` | Animation duration (ms) |
+| `fixedHeightWhileDragging` | `boolean` | | `false` | Fix container height during drag operations |
+| `multiselect` | `boolean` | | `true` | Enable multi-selection |
+| `dropzone` | `Component<{}>` | | | Custom dropzone component |
+| `placeholder` | `Component<{ parent: K }>` | | | Custom placeholder component |
 
 ### Block Render Props
 
 The `BlockTree` render function receives these props for each block:
 
-*FIXME: Change this to a table*
+| Prop | Type | Description |
+|------|------|-------------|
+| `key` | `K` | Block's unique key |
+| `data` | `T` | Your custom data |
+| `selected` | `boolean` | Whether block is currently selected |
+| `dragging` | `boolean` | Whether block is being dragged |
+| `startDrag` | `(ev: MouseEvent) => void` | Call this to initiate drag operation |
+| `children` | `JSX.Element` | Rendered child blocks |
 
-```tsx
-{
-  key: K                              // Block's unique key
-  data: T                             // Your custom data
-  selected: boolean                   // Whether block is selected
-  dragging: boolean                   // Whether block is being dragged
-  style?: JSX.CSSProperties           // Computed animation styles
-  children: JSX.Element               // Rendered child blocks
-  startDrag: (ev: MouseEvent) => void // Call to initiate drag
-}
-```
+It's perfectly fine not to render the `children` in the render function, or only conditionally render it.
+This will prevent the user from inserting any new child blocks via drag-and-drop, though any existing children
+will remain unless programmatically removed.
 
 ## Events
 
+The `BlockTree` component emits various kinds of events in response to drag-and-drop and other interactions.
+Keep in mind that the state of the block tree won't actually update unless these events are listened to,
+and the state is updated accordingly. In other words, `BlockTree` is a controlled component and state management
+is left up to the consumer.
+
 ### SelectionEvent
 
-Fired when blocks are selected or deselected:
+Fired when blocks are selected or deselected.
 
 ```tsx
 type SelectionEvent = {
-  key?: K              // The block that triggered the event
-  mode: SelectionMode  // 'set' | 'toggle' | 'range' | 'deselect'
+  key?: K              // The block that was clicked
+  mode: SelectionMode  // The selection mode (explained below)
   before: K[]          // Keys selected before the event
   after: K[]           // Keys selected after the event
 }
 ```
 
+#### Selection modes
+
+The `mode` property indicates how the selection was modified:
+
+| Mode | Value | Trigger | Behavior |
+|------|-------|---------|----------|
+| **Set** | `'set'` | Click (no modifiers) | Selects the clicked block, deselects all others |
+| **Toggle** | `'toggle'` | Cmd/Ctrl + click | Toggles the clicked block's selection state |
+| **Range** | `'range'` | Shift + Click | Selects all blocks between the first selected block and the clicked block (at the same nesting level) |
+| **Deselect** | `'deselect'` | Focus lost | Deselects all blocks |
+
 ### InsertEvent
 
-Fired when new blocks are inserted:
+Fired when new blocks are inserted.
 
 ```tsx
 type InsertEvent = {
   blocks: Block<K, T>[]  // Blocks being inserted
   place: {
     parent: K            // Parent block key
-    before: K | null     // Insert before this key, or null for end
+    before: K | null     // Insert before this key, or `null` for end
   }
 }
 ```
@@ -215,10 +225,10 @@ Fired when blocks are reordered via drag-and-drop:
 
 ```tsx
 type ReorderEvent = {
-  keys: K[]     // Keys of blocks being moved
+  keys: K[]           // Keys of blocks being moved
   place: {
-    parent: K   // New parent block key
-    before: K | null
+    parent: K         // Parent block key
+    before: K | null  // Insert before this key, or `null` for end
   }
 }
 ```
@@ -237,88 +247,114 @@ type RemoveEvent = {
 
 The library is unopinionated about state management. Here's a reference implementation using SolidJS stores:
 
-*FIXME: Expand the code below into a full working example, but refactor out common logic to keep it as terse as possible. Simplify it if at all possible without sacrificing the educational benefit of it*
-
 ```tsx
 import { createSignal } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
+import { Block, RootBlock, InsertEvent, ReorderEvent, RemoveEvent } from 'solid-nest'
 
 export function createTree<K, T>(init: RootBlock<K, T>) {
   const [root, setRoot] = createStore(init)
   const [selection, setSelection] = createSignal<K[]>([])
 
+  // Helper: recursively find a node and perform an operation
+  const findNode = (
+    node: Block<K, T> | RootBlock<K, T>,
+    targetKey: K,
+    operation: (node: Block<K, T> | RootBlock<K, T>) => boolean
+  ): boolean => {
+    if (node.key === targetKey) {
+      return operation(node)
+    }
+    if (node.children) {
+      for (const child of node.children) {
+        if (findNode(child, targetKey, operation)) return true
+      }
+    }
+    return false
+  }
+
+  // Helper: recursively remove blocks matching keys
+  const removeBlocks = (
+    node: Block<K, T> | RootBlock<K, T>,
+    keys: K[],
+    collect?: Block<K, T>[]
+  ) => {
+    if (!node.children) return
+    node.children = node.children.filter(child => {
+      if (keys.includes(child.key)) {
+        collect?.push(child)
+        return false
+      }
+      return true
+    })
+    node.children.forEach(child => removeBlocks(child, keys, collect))
+  }
+
+  // Helper: insert blocks at specified location
+  const insertBlocks = (
+    parentKey: K,
+    blocks: Block<K, T>[],
+    before: K | null
+  ) => {
+    findNode(root, parentKey, node => {
+      node.children ??= []
+      const index = before !== null
+        ? node.children.findIndex(c => c.key === before)
+        : -1
+      node.children.splice(
+        index < 0 ? node.children.length : index,
+        0,
+        ...blocks
+      )
+      return true
+    })
+  }
+
   return {
     root,
-    selection: () => selection(),
-    
+    get selection() {
+      return selection()
+    },
+
     onSelectionChange(event) {
       setSelection(event.after)
     },
 
-    onInsert(event) {
+    onInsert(event: InsertEvent<K, T>) {
       setRoot(produce(root => {
-        // Find parent and insert blocks
-        const insert = (node: Block<K, T> | RootBlock<K, T>) => {
-          if (node.key === event.place.parent) {
-            node.children ??= []
-            const index = event.place.before !== null
-              ? node.children.findIndex(c => c.key === event.place.before)
-              : -1
-            node.children.splice(
-              index < 0 ? node.children.length : index,
-              0,
-              ...event.blocks
-            )
-            return true
-          }
-          return node.children?.some(insert) ?? false
-        }
-        insert(root)
+        insertBlocks(event.place.parent, event.blocks, event.place.before)
       }))
     },
 
-    onReorder(event) {
+    onReorder(event: ReorderEvent<K>) {
       setRoot(produce(root => {
         const blocks: Block<K, T>[] = []
-        
-        // Remove blocks from current location
-        const remove = (node: Block<K, T> | RootBlock<K, T>) => {
-          if (!node.children) return
-          node.children = node.children.filter(child => {
-            if (event.keys.includes(child.key)) {
-              blocks.push(child)
-              return false
-            }
-            return true
-          })
-          node.children.forEach(remove)
-        }
-        remove(root)
-        
-        // Insert at new location (same logic as onInsert)
-        // ... (see full implementation in dev/model.ts)
+        removeBlocks(root, event.keys, blocks)
+        insertBlocks(event.place.parent, blocks, event.place.before)
       }))
     },
 
-    onRemove(event) {
+    onRemove(event: RemoveEvent<K>) {
       setRoot(produce(root => {
-        const remove = (node: Block<K, T> | RootBlock<K, T>) => {
-          if (!node.children) return
-          node.children = node.children.filter(
-            child => !event.keys.includes(child.key)
-          )
-          node.children.forEach(remove)
-        }
-        remove(root)
+        removeBlocks(root, event.keys)
       }))
     },
   }
 }
 ```
 
+This implementation:
+- Uses SolidJS's `createStore` for reactive state management
+- Extracts common tree operations into reusable helper functions
+- Handles all required events (`onSelectionChange`, `onInsert`, `onReorder`, `onRemove`)
+- Uses `produce` for immutable updates to the tree structure
+
 ## Tag-Based Constraints
 
-Control which blocks can be nested where using tags:
+Control which blocks can be nested where using tags. Every block can be assigned an optional `tag`,
+and blocks can be configured to only accept child blocks with a given set of tags, with the `accepts` property.
+
+*Note that blocks without a `tag` will be accepted by any parent block.*
 
 ```tsx
 const root: RootBlock<string, string> = {
@@ -337,29 +373,26 @@ const root: RootBlock<string, string> = {
       accepts: [],  // Accepts no children
     },
   ],
-  accepts: ['container', 'item'],
+  accepts: ['container', 'item'],  // Accepts 'container' and 'item' blocks
 }
 ```
 
-## Custom Placeholder
+## Custom placeholder and dropzone
 
 A placeholder is shown when a block has no children. By default, it just an empty `<div>` which takes up no space, but it can be changed to a custom component.
 The component recieves the `key` of the block it belongs to, allowing you to use different UIs for different blocks.
 
 ```tsx
-<BlockTree
-  {...model}
-  placeholder={({ parent }) => (
-    <div class="empty-state">
-      No items in {parent}
-    </div>
-  )}
->
+const Placeholder = ({ parent }) => (
+  <div class="empty-state">
+    No items in {parent}
+  </div>
+)
+
+<BlockTree root={root()} placeholder={Placeholder}>
   {/* ... */}
 </BlockTree>
 ```
-
-## Custom Dropzone
 
 The dropzone visually shows where the currently dragged block(s) will be placed when the mouse is released.
 By default, it is a semi-transparent black rectangle, but this too can be customised by providing a custom component.
@@ -367,19 +400,18 @@ By default, it is a semi-transparent black rectangle, but this too can be custom
 *Note: You'll probably want to give this component a `height` of `100%` to ensure it fills the available space.*
 
 ```tsx
-<BlockTree
-  {...model}
-  dropzone={() => (
-    <div class="custom-dropzone">
-      Drop here
-    </div>
-  )}
->
+const Dropzone = () => (
+  <div class="custom-dropzone" style={{ height: '100%' }}>
+    Drop here
+  </div>
+)
+
+<BlockTree root={root()} dropzone={Dropzone}>
   {/* ... */}
 </BlockTree>
 ```
 
-### Keyboard Shortcuts
+## Keyboard Shortcuts
 
 Built-in keyboard/mouse support:
 
