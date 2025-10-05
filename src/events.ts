@@ -1,4 +1,5 @@
 import { Block } from './Block'
+import { SelectionMode } from './selection'
 
 export type SelectionEvent<K> = {
   /** The key of the block that was selected/deselected. */
@@ -9,27 +10,6 @@ export type SelectionEvent<K> = {
   readonly before: K[]
   /** The new set of selected blocks after this event is applied. */
   readonly after: K[]
-}
-
-export enum SelectionMode {
-  /**
-   * The default selection mode, which selects
-   * the clicked block and deselects all others;
-   * applied when no additional keys are pressed. */
-  Set = 'set',
-  /**
-   * Toggles the selection state of the clicked block;
-   * applied when the modifier key is pressed.
-   */
-  Toggle = 'toggle',
-  /**
-   * Selects all blocks between the most recently
-   * selected block and the clicked block;
-   * applied when the shift key is pressed.
-   */
-  Range = 'range',
-  /** Deselects all blocks. */
-  Deselect = 'deselect',
 }
 
 export type InsertEvent<K, T> = {

@@ -17,12 +17,13 @@ import { modifierKey } from './util/modifierKey'
 import { flattenTree } from './util/tree'
 import { Block, BlockOptions, RootBlock } from './Block'
 import { createGapItem, Item, ItemId, RootItemId } from './Item'
-import { InsertEvent, RemoveEvent, ReorderEvent, SelectionEvent, SelectionMode } from './events'
+import { InsertEvent, RemoveEvent, ReorderEvent, SelectionEvent } from './events'
 import { measureBlock, measureBlocks } from './measure'
 import { insertPlaceholders } from './insertPlaceholders'
 import { getInsertionPoints } from './getInsertionPoints'
 import { createAnimations } from './createAnimations'
 import { AnimationState, footerStyle, innerStyle, outerStyle, placeholderStyle } from './calculateTransitionStyles'
+import { normaliseSelection, SelectionMode, updateSelection, UpdateSelectReturn } from './selection'
 import { notNull } from './util/notNull'
 import { Dropzone } from './Dropzone'
 
@@ -248,56 +249,6 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
 
   const selection = () => props.selection ?? []
 
-  const updateSelection = (key: K, mode: SelectionMode) => {
-    if (mode === SelectionMode.Set) {
-      const prev = selection().slice()
-      const next = [key]
-
-      if (prev.includes(key)) {
-        return { mode, focus: prev, click: next }
-      } else {
-        return { mode, focus: next }
-      }
-    }
-
-    if (mode === SelectionMode.Toggle) {
-      // Update the selection
-      const keys = selection().slice()
-
-      // Toggle the item
-      const index = keys.indexOf(key)
-      if (index < 0) {
-        keys.push(key)
-      } else {
-        keys.splice(index, 1)
-      }
-
-      // Normalise
-      let lastItem: Item<K> | undefined
-      for (const item of items()) {
-        if (item.kind !== 'block') continue
-
-        if (lastItem && item.level <= lastItem.level) {
-          lastItem = undefined
-        }
-
-        const index = keys.indexOf(item.key)
-        if (index < 0) continue
-
-        if (lastItem) {
-          keys.splice(index)
-        } else {
-          lastItem = item
-        }
-      }
-
-      return { mode, focus: keys }
-    }
-
-    // FIXME
-    return { mode, focus: selection().slice() }
-  }
-
   const renderItem = (
     item: Item<K, T>,
     children: Accessor<Item<K, T>[]>,
@@ -314,12 +265,11 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       if (!element) return
 
       const rect = measureBlock(element).outer
-      const items = selection().slice()
-      if (!items.includes(item.key)) items.push(item.key)
-      const tags = [...new Set(items.map(key => blockMap().get(key)?.tag).filter(notNull))]
+      const keys = normaliseSelection(items, selection())
+      const tags = [...new Set(keys.map(key => blockMap().get(key)?.tag).filter(notNull))]
 
       setDragState({
-        items,
+        items: keys,
         offset: { x: rect.left - ev.clientX, y: rect.top - ev.clientY },
         size: { x: rect.width, y: rect.height },
         tags: [...tags],
@@ -330,14 +280,14 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     const placeholder = props.placeholder ?? (() => <div />)
     const dropzone = props.dropzone ?? Dropzone
 
-    let newSelection: ReturnType<typeof updateSelection> | undefined
+    let newSelection: UpdateSelectReturn<K> | undefined
 
     const handleBlockMouseDown = (ev: MouseEvent) => {
       if (item.kind !== 'block') return
 
       ev.stopPropagation()
       const mode = ev[modifierKey] ? SelectionMode.Toggle : ev.shiftKey ? SelectionMode.Range : SelectionMode.Set
-      newSelection = updateSelection(item.key, mode)
+      newSelection = updateSelection(items, props.selection ?? [], item.key, mode)
     }
 
     const selectionUpdateHandler = (event: 'focus' | 'click') => (ev: Event) => {
