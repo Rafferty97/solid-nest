@@ -1,6 +1,6 @@
 import { type Component } from 'solid-js'
 import { BlockTree, RootBlock } from 'src'
-import { createTree } from 'src/model'
+import { createTree } from './model'
 import styles from './App.module.css'
 
 const App: Component = () => {

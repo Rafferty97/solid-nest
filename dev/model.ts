@@ -1,7 +1,6 @@
-import { createStore, produce, SetStoreFunction } from 'solid-js/store'
-import { Block, RootBlock } from './Block'
 import { createSignal } from 'solid-js'
-import { BlockTreeProps } from './BlockTree'
+import { createStore, produce, SetStoreFunction } from 'solid-js/store'
+import { BlockTreeProps, Block, RootBlock } from 'src'
 
 export type CreateTreeReturn<K, T> = Required<
   Pick<BlockTreeProps<K, T>, 'root' | 'selection' | 'onSelectionChange' | 'onInsert' | 'onReorder' | 'onRemove'>

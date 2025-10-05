@@ -1,5 +1,6 @@
 import { Accessor } from 'solid-js'
 import { Item } from './Item'
+import { modifierKey } from './util/modifierKey'
 
 export enum SelectionMode {
   /**
@@ -20,6 +21,19 @@ export enum SelectionMode {
   Range = 'range',
   /** Deselects all blocks. */
   Deselect = 'deselect',
+}
+
+export function calculateSelectionMode(ev: MouseEvent, multiselect: boolean) {
+  if (!multiselect) {
+    return SelectionMode.Set
+  }
+  if (ev[modifierKey]) {
+    return SelectionMode.Toggle
+  }
+  if (ev.shiftKey) {
+    return SelectionMode.Range
+  }
+  return SelectionMode.Set
 }
 
 export type UpdateSelectReturn<K> = {

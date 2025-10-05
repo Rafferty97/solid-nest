@@ -13,7 +13,6 @@ import {
 } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { DragState, Vec2 } from './util/types'
-import { modifierKey } from './util/modifierKey'
 import { flattenTree } from './util/tree'
 import { Block, BlockOptions, RootBlock } from './Block'
 import { createGapItem, Item, ItemId, RootItemId } from './Item'
@@ -23,7 +22,13 @@ import { insertPlaceholders } from './insertPlaceholders'
 import { getInsertionPoints } from './getInsertionPoints'
 import { createAnimations } from './createAnimations'
 import { AnimationState, footerStyle, innerStyle, outerStyle, placeholderStyle } from './calculateTransitionStyles'
-import { normaliseSelection, SelectionMode, updateSelection, UpdateSelectReturn } from './selection'
+import {
+  calculateSelectionMode,
+  normaliseSelection,
+  SelectionMode,
+  updateSelection,
+  UpdateSelectReturn,
+} from './selection'
 import { notNull } from './util/notNull'
 import { Dropzone } from './Dropzone'
 
@@ -55,6 +60,8 @@ export type BlockTreeProps<K, T> = {
    * useful for preventing odd behaviour when the component is inside a scrollable element.
    */
   fixedHeightWhileDragging?: boolean
+  /** Whether to allow mutliple blocks to be selected at once; defaults to `true`. */
+  multiselect?: boolean
 }
 
 export interface BlockProps<K, T> {
@@ -120,6 +127,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     transitionDuration: props.transitionDuration ?? 200,
     defaultSpacing: props.defaultSpacing ?? 12,
     dragRadius: { x: 1.2, y: 1.5 },
+    multiselect: props.multiselect ?? true,
   }))
 
   const [dragState, setDragState] = createSignal<DragState<K>>()
@@ -286,7 +294,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       if (item.kind !== 'block') return
 
       ev.stopPropagation()
-      const mode = ev[modifierKey] ? SelectionMode.Toggle : ev.shiftKey ? SelectionMode.Range : SelectionMode.Set
+      const mode = calculateSelectionMode(ev, options().multiselect)
       newSelection = updateSelection(items, props.selection ?? [], item.key, mode)
     }
 

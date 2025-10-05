@@ -6,7 +6,12 @@
 
 [![pnpm](https://img.shields.io/badge/maintained%20with-pnpm-cc00ff.svg?style=for-the-badge&logo=pnpm)](https://pnpm.io/)
 
-Nested block UI component, supporting drag-and-drop, multi-select and smooth animations
+This library offers the `BlockTree` component, which allows you to easily create hierarchical block-based UIs with support for:
+- Drag-and-drop
+- Unlimited nesting
+- Multi-selection
+- Smooth, performant animations
+- Copy and paste
 
 ## Quick start
 
@@ -23,5 +28,7 @@ pnpm add solid-nest
 Use it:
 
 ```tsx
-import solid-nest from 'solid-nest'
+import { BlockTree } from 'solid-nest'
+
+// todo ...
 ```
