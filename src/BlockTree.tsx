@@ -30,7 +30,7 @@ import {
   UpdateSelectReturn,
 } from './selection'
 import { notNull } from './util/notNull'
-import { Dropzone } from './Dropzone'
+import { Dropzone } from './components/Dropzone'
 
 export type BlockTreeProps<K, T> = {
   /** The root block. */

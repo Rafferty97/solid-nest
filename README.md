@@ -20,8 +20,10 @@ Care has been taken to ensure everything "just works" with minimal configuration
 - **Unlimited nesting** - Create deeply nested hierarchies
 - **Multi-selection** - Select and move multiple blocks at once
 - **Smooth animations** - Performant transitions with no jank
-- **Headless UI** - Bring your own styles and components
+- **(Nearly) Headless UI** - Bring your own styles and components*
 - **Tag-based constraints** - Control which blocks can be nested where
+
+_*Some minor styling is provided for convenience, but it's easy to override_
 
 ### Roadmap
 
