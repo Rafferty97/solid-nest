@@ -49,9 +49,9 @@ export function calculateTransitionStyles<K>(
 
     const size = { x: next.width, y: next.height }
 
+    let adjust = zeroAdjust
     const a = initMeasures.get(id)
     const b = prevMeasures.get(id)?.inner
-    let adjust = zeroAdjust
     if (a && b) {
       adjust = {
         x: a.x - b.x,
@@ -71,9 +71,9 @@ export function calculateTransitionStyles<K>(
     }
 
     const parent = parents[level - 1] ?? Vec2.Zero
+    parents[level] = { ...deltaPos }
     deltaPos.x -= parent.x
     deltaPos.y -= parent.y
-    parents[level] = deltaPos
 
     invert.set(id, { size, deltaPos, deltaSize, transition: false })
     play.set(id, { size, deltaPos: Vec2.Zero, deltaSize: Vec2.Zero, transition: true })
