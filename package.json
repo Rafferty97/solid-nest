@@ -1,6 +1,6 @@
 {
   "name": "solid-nest",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Nested block UI component, supporting drag-and-drop, multi-select and smooth animations",
   "license": "MIT",
   "author": "Rafferty97",
