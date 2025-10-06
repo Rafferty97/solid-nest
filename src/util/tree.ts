@@ -1,5 +1,5 @@
 import { Accessor, createMemo, createSignal, Setter } from 'solid-js'
-import { BlockItem, createBlockItem, createRootItem, Item, RootItem } from 'src/Item'
+import { BlockItem, createBlockItem, createRootItem, Item } from 'src/Item'
 import { Block, RootBlock } from 'src/Block'
 
 type CachedBlock<K, T> = {
@@ -8,9 +8,7 @@ type CachedBlock<K, T> = {
   setLevel: Setter<number>
 }
 
-export type FlattenTreeResult<K, T> = (BlockItem<K, T> | RootItem<K>)[]
-
-export function flattenTree<K, T>(root: Accessor<RootBlock<K, T>>): Accessor<FlattenTreeResult<K, T>> {
+export function flattenTree<K, T>(root: Accessor<RootBlock<K, T>>): Accessor<Item<K, T>[]> {
   let blocks = new Map<K, CachedBlock<K, T>>()
   let nextBlocks = new Map<K, CachedBlock<K, T>>()
 
@@ -35,7 +33,7 @@ export function flattenTree<K, T>(root: Accessor<RootBlock<K, T>>): Accessor<Fla
   }
 
   return createMemo(() => {
-    const out: FlattenTreeResult<K, T> = []
+    const out: Item<K, T>[] = []
 
     out.push(createRootItem(root()))
     for (const child of root().children ?? []) {

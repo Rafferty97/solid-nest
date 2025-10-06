@@ -1,4 +1,4 @@
-import { createPlaceholderItem, Item } from './Item'
+import { createPlaceholderItem, Item } from '../Item'
 
 export function insertPlaceholders<K, T>(root: K, input: Item<K, T>[]): Item<K, T>[] {
   const output: typeof input = []

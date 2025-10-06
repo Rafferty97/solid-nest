@@ -1,25 +1,10 @@
-import {
-  Accessor,
-  batch,
-  Component,
-  createMemo,
-  createSignal,
-  For,
-  JSX,
-  mapArray,
-  onCleanup,
-  onMount,
-  Show,
-} from 'solid-js'
+import { Accessor, Component, createMemo, For, JSX, mapArray, onMount, Show } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
-import { DragState, Vec2 } from './util/types'
 import { containsChild, flattenTree } from './util/tree'
 import { Block, BlockOptions, RootBlock } from './Block'
-import { createBlockItemId, createGapItem, Item, ItemId, RootItemId } from './Item'
+import { createBlockItemId, Item, ItemId, RootItemId } from './Item'
 import { EventHandler, InsertEvent, RemoveEvent, ReorderEvent, SelectionEvent } from './events'
-import { measureBlock, measureBlocks } from './measure'
-import { insertPlaceholders } from './insertPlaceholders'
-import { getInsertionPoints } from './getInsertionPoints'
+import { measureBlock } from './measure'
 import { createAnimations } from './createAnimations'
 import {
   AnimationState,
@@ -36,6 +21,8 @@ import {
   updateSelection,
   UpdateSelectReturn,
 } from './selection'
+import { createDnd } from './dnd/createDnd'
+import { insertPlaceholders } from './dnd/insertPlaceholders'
 import { notNull } from './util/notNull'
 import { Dropzone } from './components/Dropzone'
 import { DragContainer } from './components/DragContainer'
@@ -95,10 +82,6 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     multiselect: props.multiselect ?? true,
   }))
 
-  const [dragState, setDragState] = createSignal<DragState<K>>()
-  const [mousePos, setMousePos] = createSignal<Vec2>({ x: 0, y: 0 })
-  const updateMousePos = (ev: MouseEvent) => setMousePos({ x: ev.clientX, y: ev.clientY })
-
   const blockMap = createMemo(() => {
     const output = new Map<K, Block<K, T>>()
     const insert = (node: Block<K, T>) => {
@@ -110,115 +93,16 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
   })
 
   const blockItems = flattenTree(() => props.root)
+  const {
+    items: dndItems,
+    dragState,
+    dragPosition,
+    startDrag,
+    onReorderItems,
+  } = createDnd(blockItems, () => props.root.key, options, itemElements)
+  const { items, styles } = createAnimations(dndItems, itemElements, options)
 
-  const itemsWithoutDragged = createMemo(() => {
-    const input = blockItems()
-    const output: Item<K, T>[] = []
-
-    const state = dragState()
-    if (!state) {
-      return insertPlaceholders(props.root.key, input)
-    }
-
-    let nextLevel: number | undefined
-    for (const item of input) {
-      if (nextLevel != null && item.level > nextLevel) {
-        continue
-      }
-      nextLevel = undefined
-
-      if (state.keys.includes(item.key)) {
-        nextLevel = item.level
-        continue
-      }
-
-      output.push(item)
-    }
-
-    return insertPlaceholders(props.root.key, output)
-  })
-
-  const insertionPoints = createMemo(() => {
-    const state = dragState()
-    if (!state) return []
-
-    const items = itemsWithoutDragged()
-    const rects = measureBlocks(RootItemId, itemElements)
-
-    return [...getInsertionPoints(items, state.tags, rects, options())]
-  })
-
-  const insertion = createMemo(() => {
-    const state = dragState()
-    if (!state) return undefined
-
-    const root = measureBlock(itemElements.get(RootItemId)!).children
-    const points = insertionPoints()
-
-    // Check horizontal bounds
-    const mouseX = mousePos().x + state.offset.x - root.left
-    const radiusX = options().dragRadius.x * state.size.x
-    if (mouseX < -radiusX || mouseX > radiusX) {
-      return undefined
-    }
-
-    // Check vertical bounds
-    const mouseY = mousePos().y + state.offset.y - root.top
-    const radiusY = options().dragRadius.y * state.size.y
-    for (let i = 0; i < points.length; i++) {
-      const point = points[i]!
-      const nextY = points[i + 1]?.y ?? Infinity
-      const minY = point.y - radiusY
-      const maxY = Math.min(point.y + radiusY, 0.5 * (point.y + nextY))
-
-      if (mouseY > minY && mouseY < maxY) {
-        return point
-      }
-    }
-
-    return undefined
-  })
-
-  const itemsWithGap = createMemo(() => {
-    const input = itemsWithoutDragged()
-
-    const state = dragState()
-    const point = insertion()
-    if (!state || !point) return input
-
-    const index = input.findIndex(item => item.id === point.id)
-    if (index < 0) return input
-
-    const gap = createGapItem(point.level, point.id, state.size.y)
-    return [...input.slice(0, index), gap, ...input.slice(index)]
-  })
-
-  const { items, styles } = createAnimations(itemsWithGap, itemElements, options)
-
-  onMount(() => {
-    const onmove = updateMousePos
-    const onup = (_ev: MouseEvent) => {
-      const drag = dragState()
-      if (!drag) return
-
-      const insert = insertion()
-
-      batch(() => {
-        if (insert) {
-          props.onReorder?.({ keys: drag.keys, place: insert.place })
-        }
-        setDragState(undefined)
-      })
-    }
-
-    document.addEventListener('mousemove', onmove)
-    document.addEventListener('mouseup', onup)
-
-    onCleanup(() => {
-      document.removeEventListener('mousemove', onmove)
-      document.removeEventListener('mouseup', onup)
-    })
-  })
+  onReorderItems(ev => props.onReorder?.(ev))
 
   const selection = () => props.selection ?? []
 
@@ -228,7 +112,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     styles: Accessor<Map<string, AnimationState>> | undefined,
     itemProps: { dragging?: boolean } = {},
   ) => {
-    const startDrag = (ev: MouseEvent) => {
+    const onStartDrag = (ev: MouseEvent) => {
       if (item.kind !== 'block') return
 
       ev.preventDefault()
@@ -250,8 +134,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
 
       const tags = [...new Set(keys.map(key => blockMap().get(key)?.tag).filter(notNull))]
 
-      setDragState({ keys, top, offset, size, tags })
-      updateMousePos(ev)
+      startDrag({ keys, top, offset, size, tags })
     }
 
     const placeholder = props.placeholder ?? (() => <div />)
@@ -309,7 +192,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
               data={item.data}
               selected={selection().includes(item.key)}
               dragging={itemProps.dragging === true}
-              startDrag={startDrag}
+              startDrag={onStartDrag}
             >
               {renderItems(children, () => spacerStyle(styles?.().get(item.id)), styles)}
             </Dynamic>
@@ -360,20 +243,15 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
   }
 
   const dragContainerStyle = createMemo(() => {
-    const state = dragState()
-    if (!state) {
-      return {}
-    }
-
-    const { x: mouseX, y: mouseY } = mousePos()
+    const rect = dragPosition()
 
     return {
       position: 'fixed' as const,
       left: '0',
       top: '0',
-      width: `${state.size.x}px`,
-      height: `${state.size.y}px`,
-      transform: `translate(${mouseX + state.offset.x}px, ${mouseY + state.offset.y}px)`,
+      width: `${rect.width}px`,
+      height: `${rect.height}px`,
+      transform: `translate(${rect.x}px, ${rect.y}px)`,
       'z-index': 10000,
     }
   })

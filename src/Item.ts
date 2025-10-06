@@ -76,7 +76,7 @@ export function isPlaceholderId(id: ItemId): boolean {
   return id.startsWith('p-')
 }
 
-export function createGapItem(level: number, before: ItemId, height: number): GapItem {
+export function createDropzoneItem(level: number, before: ItemId, height: number): GapItem {
   return {
     id: `gap` as ItemId,
     level,

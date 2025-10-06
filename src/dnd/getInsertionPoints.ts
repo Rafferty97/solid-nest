@@ -1,7 +1,7 @@
-import { calculateLayout } from './calculateLayout'
-import { Item, ItemId, RootItem } from './Item'
-import { Place } from './events'
-import { BlockMeasurements } from './measure'
+import { calculateLayout } from '../calculateLayout'
+import { Item, ItemId, RootItem } from '../Item'
+import { Place } from '../events'
+import { BlockMeasurements } from '../measure'
 
 export function* getInsertionPoints<K, T>(
   items: Item<K, T>[],
