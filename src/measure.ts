@@ -1,3 +1,5 @@
+import { blockInnerClass, childrenWrapperClass } from './styles'
+
 export type BlockMeasurements = Readonly<{
   margin: Readonly<{
     top: number
@@ -25,10 +27,9 @@ export function measureBlocks<K>(root: K, blocks: Map<K, HTMLElement>): Map<K, B
 
 export function measureBlock(block: HTMLElement): BlockMeasurements {
   const outer = block.getBoundingClientRect()
+  const inner = block.querySelector(`& > .${blockInnerClass}`)?.getBoundingClientRect()
+  let children = block.querySelector(`.${childrenWrapperClass}`)?.getBoundingClientRect()
 
-  const inner = block.querySelector('& > .bt-transition')?.getBoundingClientRect()
-
-  let children = block.querySelector('[data-children]')?.getBoundingClientRect()
   const childrenVisible = !!children && children.top < outer.bottom && children.bottom > outer.top
   children ??= outer
 
@@ -54,5 +55,5 @@ export function measureInnerBlocks<K>(blocks: Map<K, HTMLElement>): Map<K, DOMRe
 }
 
 export function measureInner(block: HTMLElement): DOMRect | undefined {
-  return block.querySelector('& > .bt-transition')?.getBoundingClientRect()
+  return block.querySelector(`& > .${blockInnerClass}`)?.getBoundingClientRect()
 }

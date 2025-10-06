@@ -3,6 +3,7 @@ import { isPlaceholderId, Item, ItemId } from './Item'
 import { BlockMeasurements } from './measure'
 import { calculateLayout } from './calculateLayout'
 import { Vec2 } from './util/types'
+import { durationVar } from './styles'
 
 export interface AnimationState {
   size: Vec2
@@ -106,7 +107,7 @@ export function innerStyle(state?: AnimationState): JSX.CSSProperties {
     position: 'absolute',
     left: '0',
     top: '0',
-    transition: state.transition ? 'transform var(--bt-duration), width var(--bt-duration)' : '',
+    transition: state.transition ? `transform var(${durationVar}), width var(${durationVar})` : '',
     transform: `translate(${state.deltaPos.x}px, ${state.deltaPos.y}px)`,
     width: `${state.size.x + state.deltaSize.x}px`,
     'box-sizing': 'border-box',
@@ -120,7 +121,7 @@ export function placeholderStyle(state?: AnimationState): JSX.CSSProperties {
     position: 'absolute',
     left: '0',
     top: '0',
-    transition: state.transition ? 'width var(--bt-duration)' : '',
+    transition: state.transition ? `width var(${durationVar})` : '',
     width: `${state.size.x + state.deltaSize.x}px`,
     'box-sizing': 'border-box',
   }
@@ -129,7 +130,7 @@ export function placeholderStyle(state?: AnimationState): JSX.CSSProperties {
 export function spacerStyle(state?: AnimationState): JSX.CSSProperties {
   if (!state) return {}
   return {
-    transition: state.transition ? `margin-top var(--bt-duration)` : '',
+    transition: state.transition ? `margin-top var(${durationVar})` : '',
     'margin-top': `${state.deltaSize.y}px`,
   }
 }
@@ -141,7 +142,7 @@ export function dropzoneStyle(state?: AnimationState): JSX.CSSProperties {
     left: '0',
     top: '0',
     transition: state.transition
-      ? 'transform var(--bt-duration), width var(--bt-duration), height var(--bt-duration)'
+      ? `transform var(${durationVar}), width var(${durationVar}), height var(${durationVar})`
       : '',
     transform: `translate(${state.deltaPos.x}px, ${state.deltaPos.y}px)`,
     width: `${state.size.x + state.deltaSize.x}px`,

@@ -38,6 +38,8 @@ import {
 } from './selection'
 import { notNull } from './util/notNull'
 import { Dropzone } from './components/Dropzone'
+import { DragContainer } from './components/DragContainer'
+import { blockClass, blockInnerClass, childrenWrapperClass, injectCSS, spacerClass, spacingVar } from './styles'
 
 export type BlockTreeProps<K, T> = {
   /** The root block. */
@@ -78,49 +80,6 @@ export interface BlockProps<K, T> {
   dragging: boolean
   children: JSX.Element
   startDrag: (ev: MouseEvent) => void
-}
-
-// CSS injection - only inject once across all component instances
-let cssInjected = false
-const injectCSS = () => {
-  if (cssInjected) return
-  cssInjected = true
-
-  const styleId = 'blocktree-styles'
-  if (document.getElementById(styleId)) return
-
-  const style = document.createElement('style')
-  style.id = styleId
-  style.textContent = `
-[data-children] > * + * {
-  margin-top: var(--bt-spacing);
-}
-
-[data-children] > [data-kind='placeholder'],
-[data-children] > [data-kind='spacer'] {
-  margin-top: 0;
-}
-
-[data-kind] + [data-kind='placeholder']:not([data-measuring]) {
-  display: none;
-}
-
-[data-measuring] [data-children] > [data-kind='spacer'] {
-  display: none;
-}
-
-.bt-ghost-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 100;
-  box-shadow:
-    0 10px 15px -3px rgba(0, 0, 0, 0.1),
-    0 4px 6px -4px rgba(0, 0, 0, 0.1);
-}
-  `.trim()
-
-  document.head.appendChild(style)
 }
 
 export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
@@ -328,6 +287,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     return (
       <div
         ref={el => itemElements.set(item.id, el)}
+        class={blockClass}
         data-kind={item.kind}
         style={outerStyle(styles?.().get(item.id))}
         onMouseDown={handleBlockMouseDown}
@@ -337,10 +297,10 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       >
         {item.kind === 'block' && (
           <div
-            class="bt-transition"
+            class={blockInnerClass}
             style={{
               ...innerStyle(styles?.().get(item.id)),
-              '--bt-spacing': `${item.spacing ?? options().defaultSpacing}px`,
+              [spacingVar]: `${item.spacing ?? options().defaultSpacing}px`,
             }}
           >
             <Dynamic
@@ -356,13 +316,13 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
           </div>
         )}
         {item.kind === 'placeholder' && (
-          <div class="bt-transition" style={placeholderStyle(styles?.().get(item.id))}>
+          <div class={blockInnerClass} style={placeholderStyle(styles?.().get(item.id))}>
             <Dynamic component={placeholder} parent={item.parent} />
           </div>
         )}
         {item.kind === 'gap' && (
           <div
-            class="bt-transition"
+            class={blockInnerClass}
             style={{ 'z-index': 50, height: `${item.height}px`, ...dropzoneStyle(styles?.().get(item.id)) }}
           >
             <Dynamic component={dropzone} />
@@ -392,14 +352,14 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     const rootItems = createMemo(() => mappedItems().filter(({ item }) => item.level === items()[0]?.level))
 
     return (
-      <div data-children>
+      <div class={childrenWrapperClass}>
         <For each={rootItems()}>{({ item, children }) => renderItem(item, children, childStyles)}</For>
-        <div data-kind="spacer" style={spacerStyle?.()} />
+        <div class={spacerClass} style={spacerStyle?.()} />
       </div>
     )
   }
 
-  const ghostContainerStyle = createMemo(() => {
+  const dragContainerStyle = createMemo(() => {
     const state = dragState()
     if (!state) {
       return {}
@@ -414,6 +374,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       width: `${state.size.x}px`,
       height: `${state.size.y}px`,
       transform: `translate(${mouseX + state.offset.x}px, ${mouseY + state.offset.y}px)`,
+      'z-index': 10000,
     }
   })
 
@@ -452,6 +413,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
   return (
     <div
       ref={el => itemElements.set(RootItemId, el)}
+      class={blockClass}
       data-kind="root"
       onFocusOut={ev => {
         if (ev.relatedTarget === topElement) return
@@ -467,16 +429,15 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       style={{
         position: 'relative',
         height: containerHeight(),
-        '--bt-spacing': `${options().defaultSpacing}px`,
-        '--bt-duration': `${options().transitionDuration}ms`,
         'box-sizing': 'border-box',
+        ['--solidnest-duration']: `${options().transitionDuration}ms`,
       }}
     >
       <div
-        class="bt-transition"
+        class={blockInnerClass}
         style={{
           ...innerStyle(styles().get(RootItemId)),
-          '--bt-spacing': `${props.root.spacing ?? options().defaultSpacing}px`,
+          [spacingVar]: `${props.root.spacing ?? options().defaultSpacing}px`,
           position: 'static',
         }}
       >
@@ -502,11 +463,11 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
           })
 
           return (
-            <div class="bt-ghost-container" style={ghostContainerStyle()}>
+            <DragContainer style={dragContainerStyle()}>
               <Show when={firstItem()} keyed>
                 {item => renderItem(item, children, undefined, { dragging: true })}
               </Show>
-            </div>
+            </DragContainer>
           )
         }}
       </Show>
