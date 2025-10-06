@@ -1,25 +1,23 @@
 import { Accessor, batch, createMemo, createSignal, onCleanup, onMount } from 'solid-js'
-import { createEvent } from 'solid-events'
-import { createDropzoneItem, Item, ItemId, RootItemId } from '../Item'
+import { createBlockItemId, createDropzoneItem, Item, ItemId, RootItemId } from '../Item'
 import { insertPlaceholders } from './insertPlaceholders'
 import { DragState, Vec2 } from '../util/types'
 import { measureBlock, measureBlocks } from 'src/measure'
 import { getInsertionPoints } from './getInsertionPoints'
-import { ReorderEvent } from 'src/events'
+import { EventHandler, ReorderEvent } from 'src/events'
+import { containsChild } from 'src/util/tree'
+import { Block } from 'src/Block'
+import { notNull } from 'src/util/notNull'
 
 export function createDnd<K, T>(
   input: Accessor<Item<K, T>[]>,
   rootKey: Accessor<K>,
   options: Accessor<{ defaultSpacing: number; dragRadius: Vec2 }>,
   itemElements: Map<ItemId, HTMLElement>,
+  onReorder: EventHandler<ReorderEvent<K>>,
 ) {
-  // Create events
-  const [onStartDrag, startDrag] = createEvent<DragState<K>>()
-  const [onReorderItems, reorderItems] = createEvent<ReorderEvent<K>>()
-
   // Create drag state
   const [dragState, setDragState] = createSignal<DragState<K>>()
-  onStartDrag(state => setDragState(state))
 
   // Track mouse position
   const [mousePos, setMousePos] = createSignal<Vec2>({ x: 0, y: 0 })
@@ -35,7 +33,7 @@ export function createDnd<K, T>(
 
       batch(() => {
         if (insert) {
-          reorderItems({ keys: drag.keys, place: insert.place })
+          onReorder({ keys: drag.keys, place: insert.place })
         }
         setDragState(undefined)
       })
@@ -148,11 +146,32 @@ export function createDnd<K, T>(
     return new DOMRect(x + state.offset.x, y + state.offset.y, state.size.x, state.size.y)
   })
 
+  // Handle drag start events
+  const startDrag = (ev: MouseEvent, key: K, blocks: Block<K, T>[]) => {
+    ev.preventDefault()
+    ev.stopPropagation()
+
+    const keys = blocks.map(block => block.key)
+
+    const top = blocks.find(block => containsChild(block, key))?.key
+    if (!top) return
+
+    const element = itemElements.get(createBlockItemId(top))
+    if (!element) return
+
+    const rect = measureBlock(element).outer
+    const offset = { x: rect.left - ev.clientX, y: rect.top - ev.clientY }
+    const size = { x: rect.width, y: rect.height }
+
+    const tags = [...new Set(blocks.map(block => block.tag).filter(notNull))]
+
+    setDragState({ keys, top, offset, size, tags })
+  }
+
   return {
     items,
     dragState,
     dragPosition,
     startDrag,
-    onReorderItems,
   }
 }

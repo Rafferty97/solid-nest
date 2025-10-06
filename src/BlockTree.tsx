@@ -1,8 +1,7 @@
 import { Accessor, Component, createMemo, For, JSX, mapArray, onMount, Show } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
-import { containsChild, flattenTree } from './util/tree'
 import { Block, BlockOptions, RootBlock } from './Block'
-import { createBlockItemId, Item, ItemId, RootItemId } from './Item'
+import { Item, ItemId, RootItemId } from './Item'
 import { EventHandler, InsertEvent, RemoveEvent, ReorderEvent, SelectionEvent } from './events'
 import { measureBlock } from './measure'
 import { createAnimations } from './createAnimations'
@@ -23,6 +22,7 @@ import {
 } from './selection'
 import { createDnd } from './dnd/createDnd'
 import { insertPlaceholders } from './dnd/insertPlaceholders'
+import { flattenTree } from './util/tree'
 import { notNull } from './util/notNull'
 import { Dropzone } from './components/Dropzone'
 import { DragContainer } from './components/DragContainer'
@@ -92,19 +92,24 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     return output
   })
 
+  const selection = () => props.selection ?? []
+
   const blockItems = flattenTree(() => props.root)
+
   const {
     items: dndItems,
     dragState,
     dragPosition,
     startDrag,
-    onReorderItems,
-  } = createDnd(blockItems, () => props.root.key, options, itemElements)
+  } = createDnd(
+    blockItems,
+    () => props.root.key,
+    options,
+    itemElements,
+    ev => props.onReorder?.(ev),
+  )
+
   const { items, styles } = createAnimations(dndItems, itemElements, options)
-
-  onReorderItems(ev => props.onReorder?.(ev))
-
-  const selection = () => props.selection ?? []
 
   const renderItem = (
     item: Item<K, T>,
@@ -115,26 +120,9 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     const onStartDrag = (ev: MouseEvent) => {
       if (item.kind !== 'block') return
 
-      ev.preventDefault()
-      ev.stopPropagation()
-
       const keys = normaliseSelection(items, selection())
-      const top = keys.find(key => {
-        const block = blockMap().get(key)
-        return block != null && containsChild(block, item.key)
-      })
-      if (!top) return
-
-      const element = itemElements.get(createBlockItemId(top))
-      if (!element) return
-
-      const rect = measureBlock(element).outer
-      const offset = { x: rect.left - ev.clientX, y: rect.top - ev.clientY }
-      const size = { x: rect.width, y: rect.height }
-
-      const tags = [...new Set(keys.map(key => blockMap().get(key)?.tag).filter(notNull))]
-
-      startDrag({ keys, top, offset, size, tags })
+      const blocks = keys.map(key => blockMap().get(key)).filter(notNull)
+      startDrag(ev, item.key, blocks)
     }
 
     const placeholder = props.placeholder ?? (() => <div />)
