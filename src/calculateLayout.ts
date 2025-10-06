@@ -1,79 +1,57 @@
-import { Item, ItemId, RootItemId } from './Item'
+import { Item, ItemId, RootItem, RootItemId } from './Item'
 import { BlockMeasurements } from './measure'
 
+const ZeroMeasurement = {
+  margin: { left: 0, right: 0, top: 0, bottom: 0 },
+  childrenVisible: false,
+}
+
 export function calculateLayout<K>(
-  items: Item<K>[],
+  root: RootItem<K, unknown>,
+  hidden: Set<K>,
   measureItem: (id: ItemId) => BlockMeasurements | undefined,
   opts: { skipHidden?: boolean; defaultSpacing: number },
 ) {
-  // finished blocks
   const output = new Map<ItemId, DOMRect>()
 
-  // most recent block at level `index`
-  const stack: {
-    id: ItemId
-    x: number
-    y: number
-    width: number
-    spacing?: number
-    marginBottom: number
-  }[] = []
-
-  // dimensions for the first child of the most recent block
-  let nextX = 0
   let nextY = 0
-  let nextWidth = measureItem(RootItemId)!.children.width
 
-  let nextVisibleLevel = 0
-
-  const flush = (level: number) => {
-    while (stack.length > level) {
-      const { id, x, y, width, marginBottom } = stack.pop()!
-      nextY += marginBottom
-      nextX = x
-      nextWidth = width
-      output.set(id, new DOMRect(x, y, width, nextY - y))
-    }
-  }
-
-  for (const { id, kind, level, spacing } of items) {
-    if (level > nextVisibleLevel) continue
-
-    const { margin, childrenVisible } = measureItem(id) ?? {}
-
-    // Check whether this is the first block in its parent
-    const isFirst = stack.length <= level
-
-    // Close prior blocks with no more children
-    flush(level)
-
-    // Add spacing
-    if (!isFirst && kind !== 'placeholder') {
-      nextY += stack[level - 1]?.spacing ?? opts.defaultSpacing
+  const inner = (item: Item<K, unknown>, x: number, width: number, spacing: number, isFirst: boolean) => {
+    if (item.kind === 'block' && hidden.has(item.key)) {
+      return
     }
 
-    // Create new block
-    stack[level] = {
-      id,
-      x: nextX,
-      y: nextY,
-      width: nextWidth,
-      spacing,
-      marginBottom: margin?.bottom ?? 0,
+    const { margin, childrenVisible } = measureItem(item.id) ?? ZeroMeasurement
+
+    if (!isFirst || item.kind !== 'placeholder') {
+      nextY += spacing
     }
 
-    // Set dimensions for first child
-    if (margin && (kind !== 'placeholder' || isFirst)) {
+    const y = nextY
+
+    if (item.kind !== 'placeholder' || isFirst) {
       nextY += margin.top
-      nextX += margin.left
-      nextWidth -= margin.left + margin.right
     }
 
-    nextVisibleLevel = level + (opts.skipHidden && !childrenVisible ? 0 : 1)
+    if ((childrenVisible || !opts.skipHidden) && (item.kind === 'root' || item.kind === 'block')) {
+      const innerX = x + margin.left
+      const innerWidth = width - (margin.left + margin.right)
+      const innerSpacing = item.spacing ?? opts.defaultSpacing
+      let isFirst = true
+
+      for (const child of item.children) {
+        inner(child, innerX, innerWidth, innerSpacing, isFirst)
+        isFirst = false
+      }
+    }
+
+    nextY += margin.bottom
+
+    output.set(item.id, new DOMRect(x, y, width, nextY - y))
   }
 
-  // Close remaining blocks
-  flush(0)
+  const rootWidth = measureItem(RootItemId)!.children.width
+  inner(root, 0, rootWidth, 0, true)
 
   return output
 }

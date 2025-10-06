@@ -26,3 +26,7 @@ export type BlockOptions = {
   /** The set of tags that this block accepts as children. */
   accepts?: string[]
 }
+
+export function containsChild<K>(tree: Block<K, unknown>, id: K): boolean {
+  return tree.key === id || tree.children?.find(child => containsChild(child, id)) != null
+}

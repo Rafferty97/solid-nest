@@ -1,10 +1,10 @@
 import { Accessor, createEffect, createSignal, onCleanup, untrack } from 'solid-js'
-import { Item, ItemId, RootItemId } from './Item'
+import { Item, ItemId, RootItem, RootItemId } from './Item'
 import { calculateTransitionStyles, AnimationState } from './calculateTransitionStyles'
 import { measureBlocks, measureInnerBlocks } from './measure'
 
 export function createAnimations<K, T>(
-  input: Accessor<Item<K, T>[]>,
+  root: Accessor<RootItem<K, T>>,
   itemElements: Map<ItemId, HTMLElement>,
   options: Accessor<{
     defaultSpacing: number

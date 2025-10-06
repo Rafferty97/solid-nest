@@ -1,5 +1,4 @@
-import { Accessor } from 'solid-js'
-import { Item } from './Item'
+import { Item, RootItem } from './Item'
 import { modifierKey } from './util/modifierKey'
 
 export enum SelectionMode {
@@ -43,7 +42,7 @@ export type UpdateSelectReturn<K> = {
 }
 
 export function updateSelection<K>(
-  items: Accessor<Item<K, unknown>[]>,
+  root: RootItem<K, unknown>,
   prev: K[],
   key: K,
   mode: SelectionMode,
@@ -73,58 +72,49 @@ export function updateSelection<K>(
     return { mode, focus: keys }
   }
 
-  if (mode === SelectionMode.Range) {
-    const first = prev[0]
-    if (first == null) {
-      return { mode, focus: [key] }
-    }
+  // if (mode === SelectionMode.Range) {
+  //   const first = prev[0]
+  //   if (first == null) {
+  //     return { mode, focus: [key] }
+  //   }
 
-    const items_ = items()
-    const i = items_.findIndex(item => item.key === first)
-    const j = items_.findIndex(item => item.key === key)
-    if (!items_[i] || !items_[j] || items_[i].level !== items_[j].level) {
-      return { mode, focus: prev.slice() }
-    }
+  //   const items_ = items()
+  //   const i = items_.findIndex(item => item.key === first)
+  //   const j = items_.findIndex(item => item.key === key)
+  //   if (!items_[i] || !items_[j] || items_[i].level !== items_[j].level) {
+  //     return { mode, focus: prev.slice() }
+  //   }
 
-    const keys: K[] = []
-    const level = items_[i].level
-    for (let k = Math.min(i, j); k <= Math.max(i, j); k++) {
-      const item = items_[k]
-      if (item?.kind !== 'block' || item.level > level) continue
-      if (item.level < level) {
-        return { mode, focus: prev.slice() }
-      }
-      keys.push(item.key)
-    }
+  //   const keys: K[] = []
+  //   const level = items_[i].level
+  //   for (let k = Math.min(i, j); k <= Math.max(i, j); k++) {
+  //     const item = items_[k]
+  //     if (item?.kind !== 'block' || item.level > level) continue
+  //     if (item.level < level) {
+  //       return { mode, focus: prev.slice() }
+  //     }
+  //     keys.push(item.key)
+  //   }
 
-    if (i > j) keys.reverse()
+  //   if (i > j) keys.reverse()
 
-    return { mode, focus: keys }
-  }
+  //   return { mode, focus: keys }
+  // }
 
   return { mode, focus: [] }
 }
 
-export function normaliseSelection<K>(items: Accessor<Item<K, unknown>[]>, keys: K[]): K[] {
-  keys = keys.slice()
+export function normaliseSelection<K>(root: RootItem<K, unknown>, keys: K[]): K[] {
+  const childKeys = new Set<K>()
 
-  let lastItem: Item<K> | undefined
-  for (const item of items()) {
-    if (item.kind !== 'block') continue
-
-    if (lastItem && item.level <= lastItem.level) {
-      lastItem = undefined
-    }
-
-    const index = keys.indexOf(item.key)
-    if (index < 0) continue
-
-    if (lastItem) {
-      keys.splice(index, 1)
-    } else {
-      lastItem = item
-    }
+  const process = (item: Item<K, unknown>, insert = false) => {
+    if (item.kind !== 'block') return
+    if (insert) childKeys.add(item.key)
+    insert ||= keys.includes(item.key)
+    item.children.forEach(child => process(child, insert))
   }
 
-  return keys
+  process(root)
+
+  return keys.filter(key => !childKeys.has(key))
 }

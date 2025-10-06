@@ -1,17 +1,22 @@
 import { Accessor, batch, createMemo, createSignal, onCleanup, onMount } from 'solid-js'
-import { createBlockItemId, createDropzoneItem, Item, ItemId, RootItemId } from '../Item'
-import { insertPlaceholders } from './insertPlaceholders'
-import { DragState, Vec2 } from '../util/types'
+import { createBlockItemId, ItemId, RootItem, RootItemId } from '../Item'
+import { Vec2 } from '../util/types'
+import { notNull } from 'src/util/notNull'
 import { measureBlock, measureBlocks } from 'src/measure'
 import { getInsertionPoints } from './getInsertionPoints'
 import { EventHandler, ReorderEvent } from 'src/events'
-import { containsChild } from 'src/util/tree'
-import { Block } from 'src/Block'
-import { notNull } from 'src/util/notNull'
+import { Block, containsChild } from 'src/Block'
+
+export type DragState<K> = {
+  keys: K[]
+  top: K
+  offset: Vec2
+  size: Vec2
+  tags: string[]
+}
 
 export function createDnd<K, T>(
-  input: Accessor<Item<K, T>[]>,
-  rootKey: Accessor<K>,
+  root: Accessor<RootItem<K, T>>,
   options: Accessor<{ defaultSpacing: number; dragRadius: Vec2 }>,
   itemElements: Map<ItemId, HTMLElement>,
   onReorder: EventHandler<ReorderEvent<K>>,
@@ -48,46 +53,15 @@ export function createDnd<K, T>(
     })
   })
 
-  // Insert placeholders
-  const itemsWithPlaceholders = createMemo(() => insertPlaceholders(rootKey(), input()))
-
-  // Remove the dragged items, and insert placeholders
-  const itemsWithoutDragged = createMemo(() => {
-    const state = dragState()
-    if (!state) {
-      return itemsWithPlaceholders()
-    }
-
-    const input_ = itemsWithPlaceholders()
-    const output: Item<K, T>[] = []
-
-    let nextLevel: number | undefined
-    for (const item of input_) {
-      if (nextLevel != null && item.level > nextLevel) {
-        continue
-      }
-      nextLevel = undefined
-
-      if (item.key && state.keys.includes(item.key)) {
-        nextLevel = item.level
-        continue
-      }
-
-      output.push(item)
-    }
-
-    return output
-  })
-
   // Calculate the possible insertion points
   const insertionPoints = createMemo(() => {
     const state = dragState()
     if (!state) return []
 
-    const items = itemsWithoutDragged()
     const rects = measureBlocks(RootItemId, itemElements)
+    const selected = new Set(state.keys)
 
-    return [...getInsertionPoints(items, state.tags, rects, options())]
+    return getInsertionPoints(root(), selected, state.tags, rects, options())
   })
 
   // Calculate where the dragged item(s) should be inserted
@@ -123,19 +97,19 @@ export function createDnd<K, T>(
   })
 
   // Insert the dropzone
-  const items = createMemo(() => {
-    const input = itemsWithoutDragged()
+  // const items = createMemo(() => {
+  //   const input = itemsWithoutDragged()
 
-    const state = dragState()
-    const point = insertion()
-    if (!state || !point) return input
+  //   const state = dragState()
+  //   const point = insertion()
+  //   if (!state || !point) return input
 
-    const index = input.findIndex(item => item.id === point.id)
-    if (index < 0) return input
+  //   const index = input.findIndex(item => item.id === point.id)
+  //   if (index < 0) return input
 
-    const gap = createDropzoneItem(point.level, point.id, state.size.y)
-    return [...input.slice(0, index), gap, ...input.slice(index)]
-  })
+  //   const gap = createDropzoneItem(point.level, point.id, state.size.y)
+  //   return [...input.slice(0, index), gap, ...input.slice(index)]
+  // })
 
   // Calculate position of drag container
   const dragPosition = createMemo(() => {
@@ -169,7 +143,7 @@ export function createDnd<K, T>(
   }
 
   return {
-    items,
+    // items,
     dragState,
     dragPosition,
     startDrag,

@@ -3,42 +3,50 @@ import { Item, ItemId, RootItem } from '../Item'
 import { Place } from '../events'
 import { BlockMeasurements } from '../measure'
 
-export function* getInsertionPoints<K, T>(
-  items: Item<K, T>[],
+export type InsertionPoint<K> = { id: ItemId; place: Place<K>; y: number }
+
+export function getInsertionPoints<K, T>(
+  root: RootItem<K, T>,
+  selected: Set<K>,
   tags: string[],
   measures: Map<ItemId, BlockMeasurements>,
   options: { defaultSpacing: number },
-) {
-  const layout = calculateLayout(items, id => measures.get(id), { ...options, skipHidden: true })
+): InsertionPoint<K>[] {
+  const output: InsertionPoint<K>[] = []
 
-  const iter = items[Symbol.iterator]()
-  const root = iter.next().value as RootItem<K>
-  const stack = [{ key: root.key, accepts: root.accepts }]
+  const layout = calculateLayout(root, selected, id => measures.get(id), { ...options, skipHidden: true })
 
-  for (const item of iter) {
-    const { id, level } = item
-
-    // Push to stack for child items
-    if (item.kind === 'block') {
-      stack[level] = { key: item.key, accepts: item.accepts }
+  const inner = (item: Item<K, T>, parent: K) => {
+    const { id } = item
+    if (item.kind === 'block' && selected.has(item.key)) {
+      return
     }
 
     // Check there's a layout
     const rect = layout.get(item.id)
-    if (!rect) continue
+    if (!rect) return
 
-    // Check that this items's parent accepts the dragged item(s)
-    const parent = stack[level - 1]!
-    if (tags.find(tag => !parent.accepts?.includes(tag))) {
-      continue
-    }
-
-    // Yield the insertion point
+    // Push the insertion point
     const place: Place<K> = {
-      parent: parent.key,
+      parent,
       before: item.kind === 'block' ? item.key : null,
     }
     const y = rect.top
-    yield { id, place, level, y }
+    output.push({ id, place, y })
+
+    // Iterate children
+    if (item.kind === 'block' && tags.find(tag => !item.accepts?.includes(tag))) {
+      for (const child of item.children) {
+        inner(child, item.key)
+      }
+    }
   }
+
+  if (tags.find(tag => !root.accepts?.includes(tag))) {
+    for (const child of root.children) {
+      inner(child, root.key)
+    }
+  }
+
+  return output
 }
