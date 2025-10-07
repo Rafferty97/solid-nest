@@ -52,17 +52,20 @@ const App: Component = () => {
         placeholder={() => <div class={styles.placeholder}>nothing here</div>}
         // transitionDuration={2500}
       >
-        {block => (
-          <div
-            class={[styles.block, block.selected ? styles.selected : ''].join(' ')}
-            draggable={true}
-            onDragStart={block.startDrag}
-          >
-            <div>{block.data}</div>
-            {block.children}
-            <div>Footer</div>
-          </div>
-        )}
+        {block => {
+          console.log('render block', block.key)
+          return (
+            <div
+              class={[styles.block, block.selected ? styles.selected : ''].join(' ')}
+              draggable={true}
+              onDragStart={block.startDrag}
+            >
+              <div>{block.data}</div>
+              {block.children}
+              <div>Footer</div>
+            </div>
+          )
+        }}
       </BlockTree>
       <button onClick={appendBlock}>Append block</button>
     </div>

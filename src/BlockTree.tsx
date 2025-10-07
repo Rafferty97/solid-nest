@@ -1,7 +1,7 @@
 import { Accessor, Component, createMemo, For, JSX, onMount, Show } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { Block, BlockOptions, RootBlock } from './Block'
-import { createRootItem, findBlockItem, Item, ItemId, RootItemId } from './Item'
+import { createRootItem, Item, ItemId, RootItemId } from './Item'
 import { EventHandler, InsertEvent, RemoveEvent, ReorderEvent, SelectionEvent } from './events'
 import { measureBlock } from './measure'
 import { createAnimations } from './createAnimations'
@@ -25,6 +25,7 @@ import { notNull } from './util/notNull'
 import { Dropzone } from './components/Dropzone'
 import { DragContainer } from './components/DragContainer'
 import { blockClass, blockInnerClass, childrenWrapperClass, injectCSS, spacerClass, spacingVar } from './styles'
+import { VirtualTree } from './virtual-tree'
 
 export type BlockTreeProps<K, T> = {
   /** The root block. */
@@ -90,14 +91,15 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     return output
   })
 
-  const rootItem = createMemo(() => createRootItem(props.root))
-
   const selection = () => props.selection ?? []
 
-  const dnd = createDnd(rootItem, options, itemElements, ev => props.onReorder?.(ev))
-  const { items: dndItems, dragState, dragPosition, startDrag } = dnd
+  const root = createMemo(() => createRootItem(props.root))
+  const inputTree = createMemo(() => VirtualTree.create(root()))
 
-  const { items, styles } = createAnimations(dndItems, itemElements, options)
+  const dnd = createDnd(inputTree, options, itemElements, ev => props.onReorder?.(ev))
+  const { treeWithDropzone, dragState, dragPosition, startDrag } = dnd
+
+  const { tree, styles } = createAnimations(treeWithDropzone, itemElements, options)
 
   const renderItem = (
     item: Item<K, T>,
@@ -107,7 +109,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     const onStartDrag = (ev: MouseEvent) => {
       if (item.kind !== 'block') return
 
-      const keys = normaliseSelection(rootItem(), selection())
+      const keys = normaliseSelection(root(), selection())
       const blocks = keys.map(key => blockMap().get(key)).filter(notNull)
       startDrag(ev, item.key, blocks)
     }
@@ -122,7 +124,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
 
       ev.stopPropagation()
       const mode = calculateSelectionMode(ev, options().multiselect)
-      newSelection = updateSelection(rootItem(), props.selection ?? [], item.key, mode)
+      newSelection = updateSelection(root(), props.selection ?? [], item.key, mode)
     }
 
     const selectionUpdateHandler = (event: 'focus' | 'click') => (ev: Event) => {
@@ -286,7 +288,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       >
         <div ref={topElement} tabIndex={-1} />
         {renderItems(
-          () => rootItem().children,
+          () => tree().root.children,
           () => spacerStyle(styles().get(RootItemId)),
           styles,
         )}
@@ -296,12 +298,13 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       {/* Drag ghost */}
       <Show when={dragState()} keyed>
         {state => {
-          const firstItem = createMemo(() => findBlockItem(rootItem(), state.top))
+          // const firstItem = createMemo(() => findBlockItem(inputTree(), state.top))
           return (
             <DragContainer style={dragContainerStyle()}>
-              <Show when={firstItem()} keyed>
+              {/* <Show when={firstItem()} keyed>
                 {item => renderItem(item, undefined, { dragging: true })}
-              </Show>
+                </Show> */}
+              <div class="bg-red-500 h-full" />
             </DragContainer>
           )
         }}

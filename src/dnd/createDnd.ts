@@ -6,6 +6,7 @@ import { measureBlock, measureBlocks } from 'src/measure'
 import { getInsertionPoints } from './getInsertionPoints'
 import { EventHandler, ReorderEvent } from 'src/events'
 import { Block, containsChild } from 'src/Block'
+import { VirtualTree } from 'src/virtual-tree'
 
 export type DragState<K> = {
   keys: K[]
@@ -16,7 +17,7 @@ export type DragState<K> = {
 }
 
 export function createDnd<K, T>(
-  root: Accessor<RootItem<K, T>>,
+  input: Accessor<VirtualTree<K, T>>,
   options: Accessor<{ defaultSpacing: number; dragRadius: Vec2 }>,
   itemElements: Map<ItemId, HTMLElement>,
   onReorder: EventHandler<ReorderEvent<K>>,
@@ -53,15 +54,21 @@ export function createDnd<K, T>(
     })
   })
 
+  // Remove the selected blocks
+  const treeWithoutDragged = createMemo(() => {
+    const state = dragState()
+    if (!state) return input()
+    return input().removeBlocks(state.keys)
+  })
+
   // Calculate the possible insertion points
   const insertionPoints = createMemo(() => {
     const state = dragState()
     if (!state) return []
 
     const rects = measureBlocks(RootItemId, itemElements)
-    const selected = new Set(state.keys)
 
-    return getInsertionPoints(root(), selected, state.tags, rects, options())
+    return getInsertionPoints(treeWithoutDragged(), state.tags, rects, options())
   })
 
   // Calculate where the dragged item(s) should be inserted
@@ -97,19 +104,15 @@ export function createDnd<K, T>(
   })
 
   // Insert the dropzone
-  // const items = createMemo(() => {
-  //   const input = itemsWithoutDragged()
+  const treeWithDropzone = createMemo(() => {
+    const input = treeWithoutDragged()
 
-  //   const state = dragState()
-  //   const point = insertion()
-  //   if (!state || !point) return input
+    const state = dragState()
+    const point = insertion()
+    if (!state || !point) return input
 
-  //   const index = input.findIndex(item => item.id === point.id)
-  //   if (index < 0) return input
-
-  //   const gap = createDropzoneItem(point.level, point.id, state.size.y)
-  //   return [...input.slice(0, index), gap, ...input.slice(index)]
-  // })
+    return treeWithoutDragged().insertDropzone(point.place, state.size.y)
+  })
 
   // Calculate position of drag container
   const dragPosition = createMemo(() => {
@@ -143,7 +146,7 @@ export function createDnd<K, T>(
   }
 
   return {
-    // items,
+    treeWithDropzone,
     dragState,
     dragPosition,
     startDrag,

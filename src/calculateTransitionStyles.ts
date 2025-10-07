@@ -1,9 +1,10 @@
 import { JSX } from 'solid-js'
-import { isPlaceholderId, Item, ItemId } from './Item'
+import { createDropzoneItemId, isPlaceholderId, ItemId } from './Item'
 import { BlockMeasurements } from './measure'
 import { calculateLayout } from './calculateLayout'
 import { Vec2 } from './util/types'
 import { durationVar } from './styles'
+import { VirtualTree } from './virtual-tree'
 
 export interface AnimationState {
   size: Vec2
@@ -14,23 +15,22 @@ export interface AnimationState {
 }
 
 export function calculateTransitionStyles<K>(
-  prevItems: Item<K>[],
-  nextItems: Item<K>[],
+  prevTree: VirtualTree<K, unknown>,
+  nextTree: VirtualTree<K, unknown>,
   initMeasures: Map<ItemId, DOMRect | undefined>,
   prevMeasures: Map<ItemId, BlockMeasurements>,
   nextMeasures: Map<ItemId, BlockMeasurements>,
   options: { defaultSpacing: number },
 ) {
-  const prevRects = calculateLayout(prevItems, id => prevMeasures.get(id) ?? nextMeasures.get(id), options)
-  const nextRects = calculateLayout(nextItems, id => nextMeasures.get(id) ?? prevMeasures.get(id), options)
+  const prevRects = calculateLayout(prevTree, id => prevMeasures.get(id) ?? nextMeasures.get(id), options)
+  const nextRects = calculateLayout(nextTree, id => nextMeasures.get(id) ?? prevMeasures.get(id), options)
 
   // Special treatment for gaps
   const GapItemId = 'gap' as ItemId
   const [prevGap, nextGap] = [prevRects.get(GapItemId), nextRects.get(GapItemId)]
   if (!prevGap && nextGap) {
     const calcHeight = () => {
-      const itemId = nextItems.find(item => item.kind === 'gap')?.before
-      if (!itemId) return 0
+      const itemId = createDropzoneItemId()
       const [prevItem, nextItem] = [prevRects.get(itemId), nextRects.get(itemId)]
       if (!prevItem || !nextItem) return 0
       const prop = isPlaceholderId(itemId) ? ('bottom' as const) : ('y' as const)
@@ -44,12 +44,9 @@ export function calculateTransitionStyles<K>(
   const parents: Vec2[] = []
   const zeroAdjust = { x: 0, y: 0, width: 0, height: 0 }
 
-  const prevLevels = new Map<ItemId, number>()
-  for (const { id, level } of prevItems) {
-    prevLevels.set(id, level)
-  }
+  const prevLevels = new Map(prevTree.levels())
 
-  for (const { id, level } of nextItems) {
+  for (const [id, level] of nextTree.levels()) {
     const prev = prevRects.get(id)
     const next = nextRects.get(id)
     if (!prev || !next) continue

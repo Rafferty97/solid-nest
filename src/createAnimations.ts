@@ -1,24 +1,25 @@
 import { Accessor, createEffect, createSignal, onCleanup, untrack } from 'solid-js'
-import { Item, ItemId, RootItem, RootItemId } from './Item'
+import { Item, ItemId, RootItemId } from './Item'
 import { calculateTransitionStyles, AnimationState } from './calculateTransitionStyles'
 import { measureBlocks, measureInnerBlocks } from './measure'
+import { VirtualTree } from './virtual-tree'
 
 export function createAnimations<K, T>(
-  root: Accessor<RootItem<K, T>>,
+  input: Accessor<VirtualTree<K, T>>,
   itemElements: Map<ItemId, HTMLElement>,
   options: Accessor<{
     defaultSpacing: number
     transitionDuration: number
   }>,
 ) {
-  const [items, setItems] = createSignal<Item<K, T>[]>([])
+  const [tree, setTree] = createSignal(input())
   const [styles, setStyles] = createSignal(new Map<ItemId, AnimationState>())
   const [animationState, setAnimationState] = createSignal<{
     step: number
     fn: Generator<number>
   }>()
 
-  function* animate(prevItems: Item<K, T>[], nextItems: Item<K, T>[]) {
+  function* animate(prev: VirtualTree<K, T>, next: VirtualTree<K, T>) {
     const initRects = measureInnerBlocks(itemElements)
 
     // F. Before state measurement
@@ -27,12 +28,12 @@ export function createAnimations<K, T>(
     const prevRects = measureBlocks(RootItemId, itemElements)
 
     // L. After state measurement
-    setItems(nextItems)
+    setTree(next)
     yield 0
     const nextRects = measureBlocks(RootItemId, itemElements)
 
     // I. Apply inverse styles
-    const { invert, play } = calculateTransitionStyles(prevItems, nextItems, initRects, prevRects, nextRects, options())
+    const { invert, play } = calculateTransitionStyles(prev, next, initRects, prevRects, nextRects, options())
     setStyles(invert)
 
     // P. Play animation
@@ -44,15 +45,11 @@ export function createAnimations<K, T>(
     setStyles(new Map())
   }
 
-  const saveItems = () => untrack(input).map(item => ({ ...item }))
-
-  let prevItems = saveItems()
-
+  let prevTree = tree()
   createEffect(() => {
-    const nextItems = input().map(item => ({ ...item }))
-    const fn = animate(prevItems, nextItems)
-    prevItems = saveItems()
-    setAnimationState({ step: 0, fn })
+    const nextTree = input()
+    setAnimationState({ step: 0, fn: animate(prevTree, nextTree) })
+    prevTree = nextTree
   })
 
   createEffect(() => {
@@ -74,5 +71,5 @@ export function createAnimations<K, T>(
     }
   })
 
-  return { items, styles }
+  return { tree, styles }
 }

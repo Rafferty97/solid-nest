@@ -8,14 +8,6 @@ export type Item<K, T = unknown> = RootItem<K, T> | BlockItem<K, T> | Placeholde
 
 export type ItemKind = Item<any, any>['kind']
 
-export type RootItem<K, T> = BlockOptions &
-  Readonly<{
-    id: ItemId
-    kind: 'root'
-    key: K
-    children: Item<K, T>[]
-  }>
-
 export type BlockItem<K, T> = BlockOptions &
   Readonly<{
     id: ItemId
@@ -25,24 +17,33 @@ export type BlockItem<K, T> = BlockOptions &
     children: Item<K, T>[]
   }>
 
+export type RootItem<K, T> = BlockOptions &
+  Readonly<{
+    id: ItemId
+    kind: 'root'
+    key: K
+    children: Item<K, T>[]
+  }>
+
 export type PlaceholderItem<K> = Readonly<{
   id: ItemId
   kind: 'placeholder'
-  key?: never
   parent: K
-  spacing?: never
+  key?: never
+  children?: never
 }>
 
 export type GapItem = Readonly<{
   id: ItemId
   kind: 'gap'
-  key?: never
   before: ItemId
   height: number
-  spacing?: never
+  key?: never
+  children?: never
 }>
 
 export const RootItemId = 'root' as ItemId
+export const DropzoneItemId = 'gap' as ItemId
 
 export function createRootItem<K, T>(root: RootBlock<K, T>): RootItem<K, T> {
   const childBlocks = mapArray(
@@ -101,16 +102,20 @@ export function createBlockItem<K, T>(block: Block<K, T>): BlockItem<K, T> {
   }
 }
 
-export function createBlockItemId<K>(key: K): ItemId {
-  return `b-${key}` as ItemId
+export function createBlockItemId<K>(key: K, rootKey?: K): ItemId {
+  return key === rootKey ? RootItemId : (`b-${key}` as ItemId)
 }
 
 export function createPlaceholderItem<K>(parent: K): PlaceholderItem<K> {
   return {
-    id: `p-${parent}` as ItemId,
+    id: createPlaceholderItemId(parent),
     kind: 'placeholder',
     parent,
   }
+}
+
+export function createPlaceholderItemId<K>(parent: K): ItemId {
+  return `p-${parent}` as ItemId
 }
 
 export function isPlaceholderId(id: ItemId): boolean {
@@ -119,20 +124,24 @@ export function isPlaceholderId(id: ItemId): boolean {
 
 export function createDropzoneItem(before: ItemId, height: number): GapItem {
   return {
-    id: `gap` as ItemId,
+    id: createDropzoneItemId(),
     kind: 'gap',
     before,
     height,
   }
 }
 
-export function findBlockItem<K, T>(root: RootItem<K, T> | BlockItem<K, T>, key: K): BlockItem<K, T> | undefined {
-  if (root.kind === 'block' && root.key === key) {
-    return root
-  }
-  for (const child of root.children) {
-    const result = findBlockItem(child, key)
-    if (result) return result
-  }
-  return undefined
+export function createDropzoneItemId(): ItemId {
+  return `gap` as ItemId
 }
+
+// export function findBlockItem<K, T>(root: RootItem<K, T> | BlockItem<K, T>, key: K): BlockItem<K, T> | undefined {
+//   if (root.kind === 'block' && root.key === key) {
+//     return root
+//   }
+//   for (const child of root.children) {
+//     const result = findBlockItem(child, key)
+//     if (result) return result
+//   }
+//   return undefined
+// }
