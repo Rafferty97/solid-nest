@@ -1,5 +1,5 @@
-import { Accessor, createEffect, createSignal, onCleanup, untrack } from 'solid-js'
-import { Item, ItemId, RootItemId } from './Item'
+import { Accessor, createEffect, createSignal, onCleanup } from 'solid-js'
+import { ItemId, RootItemId } from './Item'
 import { calculateTransitionStyles, AnimationState } from './calculateTransitionStyles'
 import { measureBlocks, measureInnerBlocks } from './measure'
 import { VirtualTree } from './virtual-tree'
@@ -42,7 +42,7 @@ export function createAnimations<K, T>(
 
     // Cleanup
     yield options().transitionDuration + 100
-    // setStyles(new Map())
+    setStyles(new Map())
   }
 
   let prevTree = tree()

@@ -53,7 +53,7 @@ const App: Component = () => {
         // transitionDuration={2500}
       >
         {block => {
-          console.log('render block', block.key)
+          // console.log('render block', block.key)
           return (
             <div
               class={[styles.block, block.selected ? styles.selected : ''].join(' ')}

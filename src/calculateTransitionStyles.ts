@@ -1,5 +1,5 @@
 import { JSX } from 'solid-js'
-import { createDropzoneItemId, isPlaceholderId, ItemId } from './Item'
+import { createDropzoneItemId, DropzoneItemId, isPlaceholderId, ItemId } from './Item'
 import { BlockMeasurements } from './measure'
 import { calculateLayout } from './calculateLayout'
 import { Vec2 } from './util/types'
@@ -26,17 +26,18 @@ export function calculateTransitionStyles<K>(
   const nextRects = calculateLayout(nextTree, id => nextMeasures.get(id) ?? prevMeasures.get(id), options)
 
   // Special treatment for gaps
-  const GapItemId = 'gap' as ItemId
-  const [prevGap, nextGap] = [prevRects.get(GapItemId), nextRects.get(GapItemId)]
+  const [prevGap, nextGap] = [prevRects.get(DropzoneItemId), nextRects.get(DropzoneItemId)]
   if (!prevGap && nextGap) {
     const calcHeight = () => {
-      const itemId = createDropzoneItemId()
+      const dropzone = nextTree.findItem(DropzoneItemId)
+      const itemId = dropzone?.kind === 'gap' && dropzone.before
+      if (!itemId) return 0
       const [prevItem, nextItem] = [prevRects.get(itemId), nextRects.get(itemId)]
       if (!prevItem || !nextItem) return 0
       const prop = isPlaceholderId(itemId) ? ('bottom' as const) : ('y' as const)
       return nextGap.height + (prevItem[prop] - nextItem[prop])
     }
-    prevRects.set(GapItemId, new DOMRect(nextGap.x, nextGap.y, nextGap.width, calcHeight()))
+    prevRects.set(DropzoneItemId, new DOMRect(nextGap.x, nextGap.y, nextGap.width, calcHeight()))
   }
 
   const invert = new Map<ItemId, AnimationState>()
