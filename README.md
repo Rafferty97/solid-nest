@@ -168,7 +168,7 @@ most if not all of the event handlers too, otherwise the block tree won't be edi
 |------|------|---------|-------------|
 | `root` | `RootBlock<K, T>` | *required* | The root block of the tree |
 | `children` | `Component<BlockProps<K, T>>` | *required* | Render function for blocks |
-| `selection` | `Selection<K>` | `{}` | Current selection (blocks or insertion point) |
+| `selection` | `Selection<K>` | | Current selection (blocks or insertion point) |
 | `onSelectionChange` | `EventHandler<SelectionEvent<K>>` | | Called when selection changes |
 | `onInsert` | `EventHandler<InsertEvent<K, T>>` | | Called when blocks are inserted |
 | `onReorder` | `EventHandler<ReorderEvent<K>>` | | Called when blocks are reordered |
@@ -239,14 +239,13 @@ type SelectionEvent<K> =
 
 #### Selection modes
 
-The `mode` property indicates how the selection was modified:
+The `mode` property indicates how the selection was modified when a block was clicked:
 
 | Mode | Value | Trigger | Behavior |
 |------|-------|---------|----------|
 | **Set** | `'set'` | Click (no modifiers) | Selects the clicked block, deselects all others |
 | **Toggle** | `'toggle'` | Cmd/Ctrl + Click | Toggles the clicked block's selection state |
 | **Range** | `'range'` | Shift + Click | Selects all blocks between the first selected block and the clicked block (at the same nesting level) |
-| **Deselect** | `'deselect'` | Focus lost | Deselects all blocks |
 
 ### `InsertEvent`
 
