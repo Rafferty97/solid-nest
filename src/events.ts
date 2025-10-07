@@ -3,16 +3,31 @@ import { SelectionMode } from './selection'
 
 export type EventHandler<E> = (event: E) => void
 
-export type SelectionEvent<K> = {
-  /** The key of the block that was selected/deselected. */
-  readonly key?: K
-  /** The selection mode used. */
-  readonly mode: SelectionMode
-  /** The set of selected blocks before the event fired. */
-  readonly before: K[]
-  /** The new set of selected blocks after this event is applied. */
-  readonly after: K[]
-}
+export type SelectionEvent<K> =
+  | {
+      /** Indicates that a block was clicked. */
+      readonly kind: 'blocks'
+      /** The key of the block that was selected. */
+      readonly key: K
+      /** The selection mode used. */
+      readonly mode: SelectionMode
+      /** The new set of selected blocks after this event is applied. */
+      readonly blocks: K[]
+      readonly place?: never
+    }
+  | {
+      /** Indicates that a gap between blocks was clicked. */
+      readonly kind: 'place'
+      /** A place representing the gap that was clicked. */
+      readonly place: Place<K>
+      readonly blocks?: never
+    }
+  | {
+      /** Indicates that something other than the block tree was clicked. */
+      readonly kind: 'deselect'
+      readonly place?: never
+      readonly blocks?: never
+    }
 
 export type InsertEvent<K, T> = {
   /** The blocks being inserted. */
@@ -41,4 +56,25 @@ export type Place<K> = {
 export type RemoveEvent<K> = {
   /** The keys of the blocks that are being removed. */
   keys: K[]
+}
+
+export type CopyEvent<K, T> = {
+  /** The blocks that are being copied. */
+  blocks: Block<K, T>[]
+  /** The clipboard data transfer object. */
+  data: DataTransfer
+}
+
+export type CutEvent<K, T> = {
+  /** The blocks that are being cut. */
+  blocks: Block<K, T>[]
+  /** The clipboard data transfer object. */
+  data: DataTransfer
+}
+
+export type PasteEvent<K> = {
+  /** The place where data is being pasted. */
+  place: Place<K>
+  /** The clipboard data transfer object. */
+  data: DataTransfer
 }

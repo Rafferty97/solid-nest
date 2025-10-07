@@ -1,5 +1,5 @@
 import { createUniqueId, type Component } from 'solid-js'
-import { BlockTree, RootBlock, createBlockTree } from 'src'
+import { Block, BlockTree, CopyEvent, PasteEvent, RootBlock, createBlockTree } from 'src'
 import styles from './App.module.css'
 
 const App: Component = () => {
@@ -45,12 +45,34 @@ const App: Component = () => {
     })
   }
 
+  const onCopy = (ev: CopyEvent<string, string>) => {
+    ev.data.setData('application/x-blocks', JSON.stringify(ev.blocks))
+  }
+
+  const onCut = (ev: CopyEvent<string, string>) => {
+    ev.data.setData('application/x-blocks', JSON.stringify(ev.blocks))
+    props.onRemove({ keys: ev.blocks.map(block => block.key) })
+  }
+
+  const onPaste = (ev: PasteEvent<string>) => {
+    const place = ev.place
+    const blocks = JSON.parse(ev.data.getData('application/x-blocks')) as Block<string, string>[]
+    const process = (block: Block<string, string>) => {
+      block.key = createUniqueId()
+      block.children?.forEach(process)
+    }
+    blocks.forEach(process)
+    props.onInsert({ blocks, place })
+  }
+
   return (
     <div class={styles.container}>
       <BlockTree
         {...props}
+        onCopy={onCopy}
+        onCut={onCut}
+        onPaste={onPaste}
         placeholder={() => <div class={styles.placeholder}>nothing here</div>}
-        // transitionDuration={2500
       >
         {block => {
           // console.log('render block', block.key)

@@ -20,8 +20,6 @@ export enum SelectionMode {
    * applied when the shift key is pressed.
    */
   Range = 'range',
-  /** Deselects all blocks. */
-  Deselect = 'deselect',
 }
 
 export function calculateSelectionMode(ev: MouseEvent, multiselect: boolean) {

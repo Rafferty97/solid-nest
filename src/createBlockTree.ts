@@ -1,6 +1,6 @@
 import { createSignal } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
-import { Block, Place, RootBlock, SelectionEvent } from 'src'
+import { Block, Place, RootBlock, Selection, SelectionEvent } from 'src'
 import { InsertEvent, ReorderEvent, RemoveEvent } from 'src'
 
 /**
@@ -22,7 +22,7 @@ import { InsertEvent, ReorderEvent, RemoveEvent } from 'src'
  */
 export function createBlockTree<K, T>(init: RootBlock<K, T>) {
   const [root, setRoot] = createStore(init)
-  const [selection, setSelection] = createSignal<K[]>([])
+  const [selection, setSelection] = createSignal<Selection<K>>({})
 
   return {
     root,
@@ -32,7 +32,7 @@ export function createBlockTree<K, T>(init: RootBlock<K, T>) {
     },
 
     onSelectionChange(event: SelectionEvent<K>) {
-      setSelection(event.after)
+      setSelection(event)
     },
 
     onInsert(event: InsertEvent<K, T>) {

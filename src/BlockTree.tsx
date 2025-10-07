@@ -2,7 +2,17 @@ import { Accessor, Component, createMemo, For, JSX, onMount, Show } from 'solid-
 import { Dynamic } from 'solid-js/web'
 import { Block, BlockOptions, RootBlock } from './Block'
 import { Item, ItemId, RootItemId } from './Item'
-import { EventHandler, InsertEvent, RemoveEvent, ReorderEvent, SelectionEvent } from './events'
+import {
+  CopyEvent,
+  CutEvent,
+  EventHandler,
+  InsertEvent,
+  PasteEvent,
+  Place,
+  RemoveEvent,
+  ReorderEvent,
+  SelectionEvent,
+} from './events'
 import { measureBlock } from './measure'
 import { createAnimations } from './createAnimations'
 import {
@@ -13,25 +23,25 @@ import {
   dropzoneStyle,
   placeholderStyle,
 } from './calculateTransitionStyles'
-import {
-  calculateSelectionMode,
-  normaliseSelection,
-  SelectionMode,
-  updateSelection,
-  UpdateSelectReturn,
-} from './selection'
+import { calculateSelectionMode, normaliseSelection, updateSelection, UpdateSelectReturn } from './selection'
 import { createDnd } from './dnd/createDnd'
 import { notNull } from './util/notNull'
 import { Dropzone } from './components/Dropzone'
 import { blockClass, blockInnerClass, childrenWrapperClass, injectCSS, spacerClass, spacingVar } from './styles'
 import { VirtualTree } from './virtual-tree'
 import { DragContainer } from './components/DragContainer'
+import { Placeholder } from './components/Placeholder'
 
 export type BlockTreeProps<K, T> = {
   /** The root block. */
   root: RootBlock<K, T>
+  /**
+   * The current selection, which can be either:
+   * - A set of blocks, in the order they were selected
+   * - An insertion point between blocks
+   */
   /** The set of blocks that are currently selected, in the order they were selected. */
-  selection?: K[]
+  selection?: Selection<K>
   /** Fired when a block is selected or deselected. */
   onSelectionChange?: (event: SelectionEvent<K>) => void
   /** Fired when blocks are inserted. */
@@ -40,6 +50,12 @@ export type BlockTreeProps<K, T> = {
   onReorder?: EventHandler<ReorderEvent<K>>
   /** Fired when blocks are removed. */
   onRemove?: EventHandler<RemoveEvent<K>>
+  /** Fired when blocks are copied. */
+  onCopy?: EventHandler<CopyEvent<K, T>>
+  /** Fired when blocks are cut. */
+  onCut?: EventHandler<CutEvent<K, T>>
+  /** Fired when blocks are pasted. */
+  onPaste?: EventHandler<PasteEvent<K>>
   /** Optional custom dropzone component. */
   dropzone?: Component<{}>
   /** Optional custom placeholder component. */
@@ -59,7 +75,9 @@ export type BlockTreeProps<K, T> = {
   children: Component<BlockProps<K, T>>
 }
 
-export interface BlockProps<K, T> {
+export type Selection<K> = { blocks?: K[]; place?: Place<K> }
+
+export type BlockProps<K, T> = {
   key: K
   data: T
   selected: boolean
@@ -91,7 +109,33 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     return output
   })
 
-  const selection = () => props.selection ?? []
+  const selectedBlocks = () => props.selection?.blocks ?? []
+
+  const selectedPlace = createMemo(() => {
+    const selection = props.selection
+    if (selection?.place) {
+      return selection.place
+    }
+    if (selection?.blocks) {
+      const keys = new Set(selection.blocks)
+      const process = (parent: K, blocks: Block<K, T>[]): Place<K> | undefined => {
+        let before: K | null = null
+        for (let i = blocks.length - 1; i >= 0; i--) {
+          const { key, children } = blocks[i]!
+          if (keys.has(key)) {
+            return { parent, before }
+          }
+          if (children) {
+            const result = process(key, children)
+            if (result) return result
+          }
+          before = key
+        }
+        return undefined
+      }
+      return process(props.root.key, props.root.children ?? [])
+    }
+  })
 
   const inputTree = createMemo(() => VirtualTree.create(props.root))
 
@@ -124,10 +168,10 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
   })
 
   const handleDelete = (ev: KeyboardEvent) => {
-    if (!selection().length) return
+    if (!selectedBlocks().length) return
 
     ev.preventDefault()
-    props.onRemove?.({ keys: selection().slice() })
+    props.onRemove?.({ keys: selectedBlocks().slice() })
   }
 
   const handleKeyDown = (ev: KeyboardEvent) => {
@@ -137,13 +181,32 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
   }
 
   const handleCopy = (ev: ClipboardEvent) => {
-    if (!selection().length) return
+    const keys = normaliseSelection(tree(), selectedBlocks())
+    const data = ev.clipboardData
+    if (!keys.length || !data) return
+
     ev.preventDefault()
-    // todo
+    const blocks = keys.map(key => blockMap().get(key)).filter(notNull)
+    props.onCopy?.({ blocks, data })
   }
 
-  const handlePaste = (_ev: ClipboardEvent) => {
-    // todo
+  const handleCut = (ev: ClipboardEvent) => {
+    const keys = normaliseSelection(tree(), selectedBlocks())
+    const data = ev.clipboardData
+    if (!keys.length || !data) return
+
+    ev.preventDefault()
+    const blocks = keys.map(key => blockMap().get(key)).filter(notNull)
+    props.onCut?.({ blocks, data })
+  }
+
+  const handlePaste = (ev: ClipboardEvent) => {
+    const place = selectedPlace()
+    const data = ev.clipboardData
+    if (!place || !data) return
+
+    ev.preventDefault()
+    props.onPaste?.({ place, data })
   }
 
   const renderItem = (
@@ -155,13 +218,10 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     const onStartDrag = (ev: MouseEvent) => {
       if (item.kind !== 'block') return
 
-      const keys = normaliseSelection(tree(), selection())
+      const keys = normaliseSelection(tree(), selectedBlocks())
       const blocks = keys.map(key => blockMap().get(key)).filter(notNull)
       startDrag(ev, item.key, blocks)
     }
-
-    const placeholder = props.placeholder ?? (() => <div />)
-    const dropzone = props.dropzone ?? Dropzone
 
     let newSelection: UpdateSelectReturn<K> | undefined
 
@@ -170,7 +230,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
 
       ev.stopPropagation()
       const mode = calculateSelectionMode(ev, options().multiselect)
-      newSelection = updateSelection(tree(), props.selection ?? [], item.key, mode)
+      newSelection = updateSelection(tree(), selectedBlocks(), item.key, mode)
     }
 
     const selectionUpdateHandler = (event: 'focus' | 'click') => (ev: Event) => {
@@ -182,10 +242,10 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       if (!newSelection || !ids) return
 
       props.onSelectionChange?.({
+        kind: 'blocks',
         key: item.key,
         mode: newSelection.mode,
-        before: selection().slice(),
-        after: ids,
+        blocks: ids,
       })
       setTimeout(() => topElement.focus({ preventScroll: true }), 0)
     }
@@ -213,7 +273,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
               component={props.children}
               key={item.key}
               data={item.data}
-              selected={selection().includes(item.key)}
+              selected={selectedBlocks().includes(item.key)}
               dragging={itemProps.dragging === true}
               startDrag={onStartDrag}
             >
@@ -223,7 +283,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
         )}
         {item.kind === 'placeholder' && (
           <div class={blockInnerClass} style={placeholderStyle(styles?.().get(item.id))}>
-            <Dynamic component={placeholder} parent={item.parent} />
+            <Dynamic component={props.placeholder ?? Placeholder} parent={item.parent} />
           </div>
         )}
         {item.kind === 'gap' && (
@@ -231,7 +291,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
             class={blockInnerClass}
             style={{ 'z-index': 50, height: `${item.height}px`, ...dropzoneStyle(styles?.().get(item.id)) }}
           >
-            <Dynamic component={dropzone} />
+            <Dynamic component={props.dropzone ?? Dropzone} />
           </div>
         )}
       </div>
@@ -259,14 +319,11 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       data-kind="root"
       onFocusOut={ev => {
         if (ev.relatedTarget === topElement) return
-        props.onSelectionChange?.({
-          before: selection().slice(),
-          after: [],
-          mode: SelectionMode.Deselect,
-        })
+        props.onSelectionChange?.({ kind: 'deselect' })
       }}
       onKeyDown={handleKeyDown}
       onCopy={handleCopy}
+      onCut={handleCut}
       onPaste={handlePaste}
       style={{
         position: 'relative',
