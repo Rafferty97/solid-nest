@@ -15,10 +15,11 @@ Care has been taken to ensure everything "just works" with minimal configuration
 
 ## Features
 
-- **Tiny bundle size** - Only ~5kB minified + gzipped!
+- **Tiny bundle size** - Only ~6kB minified + gzipped!
 - **Drag-and-drop** - Intuitive block reordering with visual feedback
 - **Unlimited nesting** - Create deeply nested hierarchies
 - **Multi-selection** - Select and move multiple blocks at once
+- **Copy/paste** - Supports copy, cut and paste callbacks
 - **Smooth animations** - Performant transitions with no jank
 - **(Nearly) Headless UI** - Bring your own styles and components*
 - **Tag-based constraints** - Control which blocks can be nested where
@@ -28,7 +29,6 @@ _*Some minor styling is provided for convenience, but it's easy to override_
 ### Roadmap
 
 Some features I plan to add in the future include:
-- Copy/paste with keyboard shortcuts
 - Rectangular selection
 
 ## Demo
@@ -168,17 +168,21 @@ most if not all of the event handlers too, otherwise the block tree won't be edi
 |------|------|---------|-------------|
 | `root` | `RootBlock<K, T>` | *required* | The root block of the tree |
 | `children` | `Component<BlockProps<K, T>>` | *required* | Render function for blocks |
-| `selection` | `K[]` | | `[]` | Array of currently selected block keys |
+| `selection` | `Selection<K>` | `{}` | Current selection (blocks or insertion point) |
 | `onSelectionChange` | `EventHandler<SelectionEvent<K>>` | | Called when selection changes |
 | `onInsert` | `EventHandler<InsertEvent<K, T>>` | | Called when blocks are inserted |
 | `onReorder` | `EventHandler<ReorderEvent<K>>` | | Called when blocks are reordered |
 | `onRemove` | `EventHandler<RemoveEvent<K>>` | | Called when blocks are removed |
+| `onCopy` | `EventHandler<CopyEvent<K, T>>` | | Called when blocks are copied |
+| `onCut` | `EventHandler<CutEvent<K, T>>` | | Called when blocks are cut |
+| `onPaste` | `EventHandler<PasteEvent<K>>` | | Called when blocks are pasted |
 | `defaultSpacing` | `number` | `12` | Default spacing between blocks (px) |
 | `transitionDuration` | `number` | `200` | Animation duration (ms) |
 | `fixedHeightWhileDragging` | `boolean` | `false` | Fix container height during drag operations |
 | `multiselect` | `boolean` | `true` | Enable multi-selection |
 | `dropzone` | `Component<{}>` | | Custom dropzone component |
 | `placeholder` | `Component<{ parent: K }>` | | Custom placeholder component |
+| `dragContainer` | `Component<DragContainerProps<K, T>>` | | Custom drag container component |
 
 ### Block Render Props
 
@@ -214,15 +218,23 @@ export type EventHandler<E> = (event: E) => void
 
 ### `SelectionEvent`
 
-Fired when blocks are selected or deselected.
+Fired when blocks are selected or deselected. This is a discriminated union with three possible variants:
 
 ```tsx
-type SelectionEvent = {
-  key?: K              // The block that was clicked
-  mode: SelectionMode  // The selection mode (explained below)
-  before: K[]          // Keys selected before the event
-  after: K[]           // Keys selected after the event
-}
+type SelectionEvent<K> =
+  | {
+      kind: 'blocks'     // A block was clicked
+      key: K             // The block that was clicked
+      mode: SelectionMode // The selection mode (explained below)
+      blocks: K[]        // The new set of selected blocks
+    }
+  | {
+      kind: 'place'      // A gap between blocks was clicked
+      place: Place<K>    // The insertion point that was clicked
+    }
+  | {
+      kind: 'deselect'   // Focus was lost from the block tree
+    }
 ```
 
 #### Selection modes
@@ -274,13 +286,70 @@ type RemoveEvent = {
 }
 ```
 
+### `CopyEvent`
+
+Fired when blocks are copied (Cmd/Ctrl + C):
+
+```tsx
+type CopyEvent<K, T> = {
+  blocks: Block<K, T>[]  // Blocks being copied
+  data: DataTransfer     // Clipboard data transfer object
+}
+```
+
+You can use the `data` object to set clipboard data in any format you need:
+
+```tsx
+onCopy={(event) => {
+  const json = JSON.stringify(event.blocks)
+  event.data.setData('application/json', json)
+  event.data.setData('text/plain', `Copied ${event.blocks.length} blocks`)
+}}
+```
+
+### `CutEvent`
+
+Fired when blocks are cut (Cmd/Ctrl + X):
+
+```tsx
+type CutEvent<K, T> = {
+  blocks: Block<K, T>[]  // Blocks being cut
+  data: DataTransfer     // Clipboard data transfer object
+}
+```
+
+Similar to `CopyEvent`, but typically you'll also want to remove the blocks after cutting.
+
+### `PasteEvent`
+
+Fired when data is pasted (Cmd/Ctrl + V):
+
+```tsx
+type PasteEvent<K> = {
+  place: Place<K>     // Where the data should be pasted
+  data: DataTransfer  // Clipboard data transfer object
+}
+```
+
+You'll need to parse the clipboard data and insert the blocks:
+
+```tsx
+onPaste={(event) => {
+  const json = event.data.getData('application/json')
+  if (json) {
+    const blocks = JSON.parse(json)
+    // Insert blocks at `event.place`
+  }
+}}
+```
+
 ## State Management
 
 The library is unopinionated about state management, but it does provide a utility function called `createBlockTree`
 which creates a store for the block tree state and a set of event handlers that update this state,
 which can be directly provided to a `BlockTree` like so:
 
-```
+```tsx
 import { createUniqueId } from 'solid-js'
 
 const props = createBlockTree({ key: 'root', children: [] })
@@ -303,6 +372,9 @@ return (
   </div>
 )
 ```
+
+**Note:** `createBlockTree` provides handlers for `onSelectionChange`, `onInsert`, `onReorder`, and `onRemove`.
+If you need copy/cut/paste functionality, you'll need to implement those handlers separately.
 
 See [`createBlockTree.ts`](https://github.com/Rafferty97/solid-nest/blob/main/src/createBlockTree.ts) to get an idea
 for how you might implement your own state management system or integrate your existing one with `solid-nest`.
@@ -335,7 +407,12 @@ const root: RootBlock<string, string> = {
 }
 ```
 
-## Custom placeholder and dropzone
+## Custom components
+
+To further customise the look and feel of a `BlockTree`, the following components can be replaced with a custom implementation:
+- `Placeholder` - Shown when a block has no children
+- `Dropzone` - Shows where the dragged block(s) will be moved to when the mouse is released
+- `DragContainer` - Wraps the dragged component
 
 A placeholder is shown when a block has no children. By default, it just an empty `<div>` which takes up no space, but it can be changed to a custom component.
 The component receives the `key` of the block it belongs to, allowing you to use different UIs for different blocks.
@@ -369,12 +446,30 @@ const Dropzone = () => (
 </BlockTree>
 ```
 
+The drag container wraps the dragged block(s) during a drag operation. By default, it creates a stacked visual effect when multiple blocks are selected, showing up to 3 blocks with a slight offset to indicate multiple items are being dragged. The component receives the blocks being dragged and the rendered children.
+
+```tsx
+const DragContainer = (props: DragContainerProps<string, MyData>) => (
+  <div class="custom-drag-container">
+    {props.children}
+    <Show when={props.blocks.length > 1}>
+      <span class="badge">{props.blocks.length} items</span>
+    </Show>
+  </div>
+)
+
+<BlockTree root={root()} dragContainer={DragContainer}>
+  {/* ... */}
+</BlockTree>
+```
+
 ## Keyboard Shortcuts
 
 The `BlockTree` component has built-in support for the following keyboard shortcuts:
 - **Delete** - Remove selected blocks
-- **Cmd/Ctrl + C** - Copy selected blocks (coming soon)
-- **Cmd/Ctrl + V** - Paste blocks (coming soon)
+- **Cmd/Ctrl + C** - Copy selected blocks
+- **Cmd/Ctrl + X** - Cut selected blocks
+- **Cmd/Ctrl + V** - Paste blocks
 
 ## License
 

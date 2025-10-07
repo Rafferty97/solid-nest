@@ -350,7 +350,10 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       {/* Drag ghost */}
       <Show when={dragTree()} keyed>
         {tree => {
-          const blocks = tree.children(RootItemId)
+          const blocks = tree
+            .children(RootItemId)
+            .map(item => (item.kind === 'block' ? blockMap().get(item.key) : null))
+            .filter(notNull)
           const top = createMemo(() => {
             const state = dragState()
             return state && tree.findItemById(state.topItem)
