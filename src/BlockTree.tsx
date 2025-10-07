@@ -29,7 +29,7 @@ import { notNull } from './util/notNull'
 import { Dropzone } from './components/Dropzone'
 import { blockClass, blockInnerClass, childrenWrapperClass, injectCSS, spacerClass, spacingVar } from './styles'
 import { VirtualTree } from './virtual-tree'
-import { DragContainer } from './components/DragContainer'
+import { DragContainer, DragContainerProps } from './components/DragContainer'
 import { Placeholder } from './components/Placeholder'
 
 export type BlockTreeProps<K, T> = {
@@ -60,6 +60,8 @@ export type BlockTreeProps<K, T> = {
   dropzone?: Component<{}>
   /** Optional custom placeholder component. */
   placeholder?: Component<{ parent: K }>
+  /** Optional custom drag container component. */
+  dragContainer?: Component<DragContainerProps<K, T>>
   /** Default spacing between sibling blocks, in pixels. */
   defaultSpacing?: number
   /** Duration of transition animations, in milliseconds. */
@@ -355,11 +357,11 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
           })
           return (
             <div style={dragContainerStyle()}>
-              <DragContainer blocks={blocks}>
+              <Dynamic component={props.dragContainer ?? DragContainer} blocks={blocks}>
                 <Show when={top()} keyed>
                   {top => renderItem(top, () => tree, { dragging: true })}
                 </Show>
-              </DragContainer>
+              </Dynamic>
             </div>
           )
         }}
