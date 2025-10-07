@@ -16,11 +16,11 @@ export function calculateLayout<K>(
 
   let nextY = 0
 
-  const inner = (item: Item<K, unknown>, x: number, width: number, isFirst: boolean) => {
+  const inner = (item: Item<K, unknown>, x: number, width: number, spacing: number, isFirst: boolean) => {
     const { margin, childrenVisible } = measureItem(item.id) ?? ZeroMeasurement
 
-    if (!isFirst || item.kind !== 'placeholder') {
-      // nextY += spacing
+    if (!isFirst && item.kind !== 'placeholder') {
+      nextY += spacing
     }
 
     const y = nextY
@@ -32,11 +32,11 @@ export function calculateLayout<K>(
     if (item.children && (childrenVisible || !opts.skipHidden)) {
       const innerX = x + margin.left
       const innerWidth = width - (margin.left + margin.right)
-      // const innerSpacing = item.spacing ?? opts.defaultSpacing
-      let isFirst = true
+      const innerSpacing = item.spacing ?? opts.defaultSpacing
 
+      let isFirst = true
       for (const child of item.children) {
-        inner(child, innerX, innerWidth, isFirst)
+        inner(child, innerX, innerWidth, innerSpacing, isFirst)
         isFirst = false
       }
     }
@@ -47,7 +47,7 @@ export function calculateLayout<K>(
   }
 
   const rootWidth = measureItem(RootItemId)!.children.width
-  inner(tree.root, 0, rootWidth, true)
+  inner(tree.root, 0, rootWidth, 0, true)
 
   return output
 }
