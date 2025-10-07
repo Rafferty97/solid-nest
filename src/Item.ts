@@ -1,65 +1,25 @@
-import { createMemo, mapArray } from 'solid-js'
 import { Block, BlockOptions } from './BlockTree'
 import { RootBlock } from './Block'
 
 export type ItemId = string & { readonly brand: unique symbol }
 
-export type Item<K, T = unknown> = RootItem<K, T> | BlockItem<K, T> | PlaceholderItem<K> | GapItem
+export type Item<K, T = unknown> = RootItem<K> | BlockItem<K, T> | PlaceholderItem<K> | GapItem
 
 export type ItemKind = Item<any, any>['kind']
 
-export type BlockItem<K, T> = BlockOptions &
-  Readonly<{
-    id: ItemId
-    kind: 'block'
-    key: K
-    data: T
-    children: Item<K, T>[]
-  }>
-
-export type RootItem<K, T> = BlockOptions &
-  Readonly<{
-    id: ItemId
-    kind: 'root'
-    key: K
-    children: Item<K, T>[]
-  }>
-
-export type PlaceholderItem<K> = Readonly<{
-  id: ItemId
-  kind: 'placeholder'
-  parent: K
-  key?: never
-  children?: never
-}>
-
-export type GapItem = Readonly<{
-  id: ItemId
-  kind: 'gap'
-  before: ItemId
-  height: number
-  key?: never
-  children?: never
-}>
+export type RootItem<K> = BlockOptions & Readonly<{ id: ItemId; kind: 'root'; key: K }>
+export type BlockItem<K, T> = BlockOptions & Readonly<{ id: ItemId; kind: 'block'; key: K; data: T }>
+export type PlaceholderItem<K> = Readonly<{ id: ItemId; kind: 'placeholder'; parent: K }>
+export type GapItem = Readonly<{ id: ItemId; kind: 'gap'; before: ItemId; height: number }>
 
 export const RootItemId = 'root' as ItemId
 export const DropzoneItemId = 'gap' as ItemId
 
-export function createRootItem<K, T>(root: RootBlock<K, T>): RootItem<K, T> {
-  const childBlocks = mapArray(
-    () => root.children ?? [],
-    child => createBlockItem(child),
-  )
-  const placeholder = createPlaceholderItem(root.key)
-  const children = createMemo(() => [...childBlocks(), placeholder])
-
+export function createRootItem<K, T>(root: RootBlock<K, T>): RootItem<K> {
   return {
     id: RootItemId,
     kind: 'root',
     key: root.key,
-    get children() {
-      return children()
-    },
     get spacing() {
       return root.spacing
     },
@@ -73,22 +33,12 @@ export function createRootItem<K, T>(root: RootBlock<K, T>): RootItem<K, T> {
 }
 
 export function createBlockItem<K, T>(block: Block<K, T>): BlockItem<K, T> {
-  const childBlocks = mapArray(
-    () => block.children ?? [],
-    child => createBlockItem(child),
-  )
-  const placeholder = createPlaceholderItem(block.key)
-  const children = createMemo(() => [...childBlocks(), placeholder])
-
   return {
     id: createBlockItemId(block.key),
     kind: 'block',
     key: block.key,
     get data() {
       return block.data
-    },
-    get children() {
-      return children()
     },
     get spacing() {
       return block.spacing
@@ -134,14 +84,3 @@ export function createDropzoneItem(before: ItemId, height: number): GapItem {
 export function createDropzoneItemId(): ItemId {
   return `gap` as ItemId
 }
-
-// export function findBlockItem<K, T>(root: RootItem<K, T> | BlockItem<K, T>, key: K): BlockItem<K, T> | undefined {
-//   if (root.kind === 'block' && root.key === key) {
-//     return root
-//   }
-//   for (const child of root.children) {
-//     const result = findBlockItem(child, key)
-//     if (result) return result
-//   }
-//   return undefined
-// }

@@ -4,7 +4,6 @@ export const blockClass = `${PREFIX}-block`
 export const blockInnerClass = `${PREFIX}-block-inner`
 export const childrenWrapperClass = `${PREFIX}-children`
 export const spacerClass = `${PREFIX}-spacer`
-export const dragContainerClass = `${PREFIX}-drag-container`
 
 export const durationVar = `--${PREFIX}-duration`
 export const spacingVar = `--${PREFIX}-spacing`
@@ -25,12 +24,6 @@ stylesheet.replaceSync(`
 
   .${blockClass}[data-measuring] .${childrenWrapperClass} > .${spacerClass} {
     display: none;
-  }
-
-  .${dragContainerClass} {
-    box-shadow:
-      0 10px 15px -3px rgba(0, 0, 0, 0.1),
-      0 4px 6px -4px rgba(0, 0, 0, 0.1);
   }
 `)
 

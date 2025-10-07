@@ -1,7 +1,7 @@
 import { Accessor, Component, createMemo, For, JSX, onMount, Show } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { Block, BlockOptions, RootBlock } from './Block'
-import { createRootItem, Item, ItemId, RootItemId } from './Item'
+import { Item, ItemId, RootItemId } from './Item'
 import { EventHandler, InsertEvent, RemoveEvent, ReorderEvent, SelectionEvent } from './events'
 import { measureBlock } from './measure'
 import { createAnimations } from './createAnimations'
@@ -23,9 +23,9 @@ import {
 import { createDnd } from './dnd/createDnd'
 import { notNull } from './util/notNull'
 import { Dropzone } from './components/Dropzone'
-import { DragContainer } from './components/DragContainer'
 import { blockClass, blockInnerClass, childrenWrapperClass, injectCSS, spacerClass, spacingVar } from './styles'
 import { VirtualTree } from './virtual-tree'
+import { DragContainer } from './components/DragContainer'
 
 export type BlockTreeProps<K, T> = {
   /** The root block. */
@@ -93,23 +93,69 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
 
   const selection = () => props.selection ?? []
 
-  const root = createMemo(() => createRootItem(props.root))
-  const inputTree = createMemo(() => VirtualTree.create(root()))
+  const inputTree = createMemo(() => VirtualTree.create(props.root))
 
   const dnd = createDnd(inputTree, options, itemElements, ev => props.onReorder?.(ev))
-  const { treeWithDropzone, dragState, dragPosition, startDrag } = dnd
+  const { treeWithDropzone, dragTree, dragState, dragPosition, startDrag } = dnd
 
   const { tree, styles } = createAnimations(treeWithDropzone, itemElements, options)
 
+  const containerHeight = createMemo(() => {
+    if (dragState() != null && props.fixedHeightWhileDragging) {
+      const root = measureBlock(itemElements.get(RootItemId)!)
+      return `${root.outer.height}px`
+    } else {
+      return 'auto'
+    }
+  })
+
+  const dragContainerStyle = createMemo(() => {
+    const rect = dragPosition()
+
+    return {
+      position: 'fixed' as const,
+      left: '0',
+      top: '0',
+      width: `${rect.width}px`,
+      height: `${rect.height}px`,
+      transform: `translate(${rect.x}px, ${rect.y}px)`,
+      'z-index': 10000,
+    }
+  })
+
+  const handleDelete = (ev: KeyboardEvent) => {
+    if (!selection().length) return
+
+    ev.preventDefault()
+    props.onRemove?.({ keys: selection().slice() })
+  }
+
+  const handleKeyDown = (ev: KeyboardEvent) => {
+    if (ev.key === 'Delete') {
+      return handleDelete(ev)
+    }
+  }
+
+  const handleCopy = (ev: ClipboardEvent) => {
+    if (!selection().length) return
+    ev.preventDefault()
+    // todo
+  }
+
+  const handlePaste = (_ev: ClipboardEvent) => {
+    // todo
+  }
+
   const renderItem = (
     item: Item<K, T>,
-    styles: Accessor<Map<string, AnimationState>> | undefined,
+    tree: Accessor<VirtualTree<K, T>>,
     itemProps: { dragging?: boolean } = {},
+    styles?: Accessor<Map<string, AnimationState>>,
   ) => {
     const onStartDrag = (ev: MouseEvent) => {
       if (item.kind !== 'block') return
 
-      const keys = normaliseSelection(root(), selection())
+      const keys = normaliseSelection(tree(), selection())
       const blocks = keys.map(key => blockMap().get(key)).filter(notNull)
       startDrag(ev, item.key, blocks)
     }
@@ -124,7 +170,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
 
       ev.stopPropagation()
       const mode = calculateSelectionMode(ev, options().multiselect)
-      newSelection = updateSelection(root(), props.selection ?? [], item.key, mode)
+      newSelection = updateSelection(tree(), props.selection ?? [], item.key, mode)
     }
 
     const selectionUpdateHandler = (event: 'focus' | 'click') => (ev: Event) => {
@@ -171,11 +217,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
               dragging={itemProps.dragging === true}
               startDrag={onStartDrag}
             >
-              {renderItems(
-                () => item.children,
-                () => spacerStyle(styles?.().get(item.id)),
-                styles,
-              )}
+              {renderItems(item.id, tree, styles)}
             </Dynamic>
           </div>
         )}
@@ -197,62 +239,17 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
   }
 
   const renderItems = (
-    items: Accessor<Item<K, T>[]>,
-    spacerStyle: Accessor<JSX.CSSProperties | undefined> | undefined,
-    childStyles: Accessor<Map<string, AnimationState>> | undefined,
+    parent: ItemId,
+    tree: Accessor<VirtualTree<K, T>>,
+    styles?: Accessor<Map<string, AnimationState>>,
   ) => {
+    const items = createMemo(() => tree().children(parent))
     return (
       <div class={childrenWrapperClass}>
-        <For each={items()}>{item => renderItem(item, childStyles)}</For>
-        <div class={spacerClass} style={spacerStyle?.()} />
+        <For each={items()}>{item => renderItem(item, tree, {}, styles)}</For>
+        <div class={spacerClass} style={spacerStyle(styles?.().get(parent))} />
       </div>
     )
-  }
-
-  const dragContainerStyle = createMemo(() => {
-    const rect = dragPosition()
-
-    return {
-      position: 'fixed' as const,
-      left: '0',
-      top: '0',
-      width: `${rect.width}px`,
-      height: `${rect.height}px`,
-      transform: `translate(${rect.x}px, ${rect.y}px)`,
-      'z-index': 10000,
-    }
-  })
-
-  const containerHeight = createMemo(() => {
-    if (dragState() != null && props.fixedHeightWhileDragging) {
-      const root = measureBlock(itemElements.get(RootItemId)!)
-      return `${root.outer.height}px`
-    } else {
-      return 'auto'
-    }
-  })
-
-  const handleDelete = (ev: KeyboardEvent) => {
-    if (!selection().length) return
-
-    ev.preventDefault()
-    props.onRemove?.({ keys: selection().slice() })
-  }
-
-  const handleKeyDown = (ev: KeyboardEvent) => {
-    if (ev.key === 'Delete') {
-      return handleDelete(ev)
-    }
-  }
-
-  const handleCopy = (ev: ClipboardEvent) => {
-    if (!selection().length) return
-    ev.preventDefault()
-    // todo
-  }
-
-  const handlePaste = (_ev: ClipboardEvent) => {
-    // todo
   }
 
   return (
@@ -287,25 +284,26 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
         }}
       >
         <div ref={topElement} tabIndex={-1} />
-        {renderItems(
-          () => tree().root.children,
-          () => spacerStyle(styles().get(RootItemId)),
-          styles,
-        )}
+        {renderItems(RootItemId, tree, styles)}
         {/* This element forces the container to adapt its height based on the spacer inside `renderItems` */}
         <div style={{ 'margin-top': '-1px', 'padding-bottom': '1px' }} />
       </div>
       {/* Drag ghost */}
-      <Show when={dragState()} keyed>
-        {state => {
-          // const firstItem = createMemo(() => findBlockItem(inputTree(), state.top))
+      <Show when={dragTree()} keyed>
+        {tree => {
+          const blocks = tree.children(RootItemId)
+          const top = createMemo(() => {
+            const state = dragState()
+            return state && tree.findItem(state.topItem)
+          })
           return (
-            <DragContainer style={dragContainerStyle()}>
-              {/* <Show when={firstItem()} keyed>
-                {item => renderItem(item, undefined, { dragging: true })}
-                </Show> */}
-              <div class="bg-red-500 h-full" />
-            </DragContainer>
+            <div style={dragContainerStyle()}>
+              <DragContainer blocks={blocks}>
+                <Show when={top()} keyed>
+                  {top => renderItem(top, () => tree, { dragging: true })}
+                </Show>
+              </DragContainer>
+            </div>
           )
         }}
       </Show>

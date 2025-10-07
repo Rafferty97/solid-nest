@@ -1,5 +1,6 @@
 import { Item, RootItem } from './Item'
 import { modifierKey } from './util/modifierKey'
+import { VirtualTree } from './virtual-tree'
 
 export enum SelectionMode {
   /**
@@ -42,7 +43,7 @@ export type UpdateSelectReturn<K> = {
 }
 
 export function updateSelection<K>(
-  root: RootItem<K, unknown>,
+  tree: VirtualTree<K, unknown>,
   prev: K[],
   key: K,
   mode: SelectionMode,
@@ -104,17 +105,17 @@ export function updateSelection<K>(
   return { mode, focus: [] }
 }
 
-export function normaliseSelection<K>(root: RootItem<K, unknown>, keys: K[]): K[] {
+export function normaliseSelection<K>(tree: VirtualTree<K, unknown>, keys: K[]): K[] {
   const childKeys = new Set<K>()
 
   const process = (item: Item<K, unknown>, insert = false) => {
     if (item.kind !== 'block') return
     if (insert) childKeys.add(item.key)
     insert ||= keys.includes(item.key)
-    item.children.forEach(child => process(child, insert))
+    tree.children(item.id).forEach(child => process(child, insert))
   }
 
-  process(root)
+  tree.children(tree.root.id).forEach(child => process(child))
 
   return keys.filter(key => !childKeys.has(key))
 }

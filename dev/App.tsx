@@ -50,13 +50,15 @@ const App: Component = () => {
       <BlockTree
         {...props}
         placeholder={() => <div class={styles.placeholder}>nothing here</div>}
-        // transitionDuration={2500}
+        // transitionDuration={2500
       >
         {block => {
           // console.log('render block', block.key)
           return (
             <div
-              class={[styles.block, block.selected ? styles.selected : ''].join(' ')}
+              class={[styles.block, block.selected ? styles.selected : '', block.dragging ? styles.dragging : ''].join(
+                ' ',
+              )}
               draggable={true}
               onDragStart={block.startDrag}
             >

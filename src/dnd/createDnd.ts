@@ -1,5 +1,5 @@
 import { Accessor, batch, createMemo, createSignal, onCleanup, onMount } from 'solid-js'
-import { createBlockItemId, ItemId, RootItem, RootItemId } from '../Item'
+import { createBlockItemId, ItemId, RootItemId } from '../Item'
 import { Vec2 } from '../util/types'
 import { notNull } from 'src/util/notNull'
 import { measureBlock, measureBlocks } from 'src/measure'
@@ -10,7 +10,7 @@ import { VirtualTree } from 'src/virtual-tree'
 
 export type DragState<K> = {
   keys: K[]
-  top: K
+  topItem: ItemId
   offset: Vec2
   size: Vec2
   tags: string[]
@@ -123,30 +123,37 @@ export function createDnd<K, T>(
     return new DOMRect(x + state.offset.x, y + state.offset.y, state.size.x, state.size.y)
   })
 
+  // Visualise the dragged item(s)
+  const dragTree = createMemo(() => {
+    const state = dragState()
+    return state && input().extractBlocks(state.keys)
+  })
+
   // Handle drag start events
   const startDrag = (ev: MouseEvent, key: K, blocks: Block<K, T>[]) => {
     ev.preventDefault()
     ev.stopPropagation()
 
+    const topKey = blocks.find(block => containsChild(block, key))?.key
+    if (!topKey) return
+
+    const topItem = createBlockItemId(topKey)
+    const topElem = itemElements.get(topItem)
+    if (!topElem) return
+
+    const topRect = measureBlock(topElem).outer
+
     const keys = blocks.map(block => block.key)
-
-    const top = blocks.find(block => containsChild(block, key))?.key
-    if (!top) return
-
-    const element = itemElements.get(createBlockItemId(top))
-    if (!element) return
-
-    const rect = measureBlock(element).outer
-    const offset = { x: rect.left - ev.clientX, y: rect.top - ev.clientY }
-    const size = { x: rect.width, y: rect.height }
-
+    const offset = { x: topRect.x - ev.clientX, y: topRect.y - ev.clientY }
+    const size = { x: topRect.width, y: topRect.height }
     const tags = [...new Set(blocks.map(block => block.tag).filter(notNull))]
 
-    setDragState({ keys, top, offset, size, tags })
+    setDragState({ keys, topItem, offset, size, tags })
   }
 
   return {
     treeWithDropzone,
+    dragTree,
     dragState,
     dragPosition,
     startDrag,

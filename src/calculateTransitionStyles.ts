@@ -1,5 +1,5 @@
 import { JSX } from 'solid-js'
-import { createDropzoneItemId, DropzoneItemId, isPlaceholderId, ItemId } from './Item'
+import { DropzoneItemId, isPlaceholderId, ItemId } from './Item'
 import { BlockMeasurements } from './measure'
 import { calculateLayout } from './calculateLayout'
 import { Vec2 } from './util/types'

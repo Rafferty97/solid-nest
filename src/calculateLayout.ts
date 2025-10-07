@@ -29,13 +29,15 @@ export function calculateLayout<K>(
       nextY += margin.top
     }
 
-    if (item.children && (childrenVisible || !opts.skipHidden)) {
+    if ((item.kind === 'root' || item.kind === 'block') && (childrenVisible || !opts.skipHidden)) {
+      const children = tree.children(item.id)
+
       const innerX = x + margin.left
       const innerWidth = width - (margin.left + margin.right)
       const innerSpacing = item.spacing ?? opts.defaultSpacing
 
       let isFirst = true
-      for (const child of item.children) {
+      for (const child of children) {
         inner(child, innerX, innerWidth, innerSpacing, isFirst)
         isFirst = false
       }

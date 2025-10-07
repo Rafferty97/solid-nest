@@ -36,7 +36,7 @@ export function getInsertionPoints<K, T>(
     // Iterate children
     if (item.kind === 'block') {
       const accepts = !tags.find(tag => !item.accepts?.includes(tag))
-      for (const child of item.children) {
+      for (const child of tree.children(item.id)) {
         inner(child, item.key, accepts)
       }
     }
@@ -44,7 +44,7 @@ export function getInsertionPoints<K, T>(
 
   const root = tree.root
   const accepts = !tags.find(tag => !root.accepts?.includes(tag))
-  for (const child of root.children) {
+  for (const child of tree.children(root.id)) {
     inner(child, root.key, accepts)
   }
 

@@ -1,8 +1,13 @@
+import { Block, RootBlock } from './Block'
 import { Place } from './events'
 import {
+  BlockItem,
+  createBlockItem,
   createBlockItemId,
   createDropzoneItem,
+  createPlaceholderItem,
   createPlaceholderItemId,
+  createRootItem,
   Item,
   ItemId,
   RootItem,
@@ -11,33 +16,37 @@ import {
 import { notNull } from './util/notNull'
 
 export class VirtualTree<K, T> {
+  readonly root: RootItem<K>
   private readonly _items: Map<ItemId, Item<K, T>>
   private readonly _childMap: Map<ItemId, ItemId[]>
 
-  constructor(items: Map<ItemId, Item<K, T>>, childMap: Map<ItemId, ItemId[]>) {
+  constructor(root: RootItem<K>, items: Map<ItemId, Item<K, T>>, childMap: Map<ItemId, ItemId[]>) {
+    this.root = root
     this._items = items
     this._childMap = childMap
   }
 
-  static create<K, T>(root: RootItem<K, T>): VirtualTree<K, T> {
+  static create<K, T>(root: RootBlock<K, T>): VirtualTree<K, T> {
     const items = new Map<ItemId, Item<K, T>>()
     const childMap = new Map<ItemId, ItemId[]>()
 
-    const process = (item: Item<K, T>) => {
+    const process = (item: RootItem<K> | BlockItem<K, T>, children?: Block<K, T>[]) => {
       items.set(item.id, item)
-      if (item.children) {
-        const childIds = item.children.map(child => child.id)
-        childMap.set(item.id, childIds)
-        item.children.forEach(process)
-      }
+
+      children?.forEach(child => process(createBlockItem(child), child.children))
+
+      const placeholder = createPlaceholderItem(item.key)
+      items.set(placeholder.id, placeholder)
+
+      const childIds = children?.map(child => createBlockItemId(child.key)) ?? []
+      childIds.push(placeholder.id)
+      childMap.set(item.id, childIds)
     }
-    process(root)
 
-    return new VirtualTree(items, childMap)
-  }
+    const rootItem = createRootItem(root)
+    process(rootItem, root.children)
 
-  get root(): RootItem<K, T> {
-    return this.mapItem(RootItemId) as RootItem<K, T>
+    return new VirtualTree(rootItem, items, childMap)
   }
 
   findItem(id: ItemId): Item<K, T> | undefined {
@@ -59,7 +68,7 @@ export class VirtualTree<K, T> {
       childMap.set(id, newChildren)
     }
 
-    return new VirtualTree(this._items, childMap)
+    return new VirtualTree(this.root, this._items, childMap)
   }
 
   insertDropzone(place: Place<K>, height: number) {
@@ -78,7 +87,7 @@ export class VirtualTree<K, T> {
     children.splice(index, 0, dropzone.id)
     childMap.set(parent, children)
 
-    return new VirtualTree(items, childMap)
+    return new VirtualTree(this.root, items, childMap)
 
     // FIXME: Use `insertItems`
   }
@@ -94,7 +103,15 @@ export class VirtualTree<K, T> {
     children.splice(index, 0, ...ids)
     childMap.set(parent, children)
 
-    return new VirtualTree(this._items, childMap)
+    return new VirtualTree(this.root, this._items, childMap)
+  }
+
+  extractBlocks(keys: Iterable<K>) {
+    const childMap = new Map(this._childMap)
+    const ids = []
+    for (const key of keys) ids.push(createBlockItemId(key))
+    childMap.set(this.root.id, ids)
+    return new VirtualTree(this.root, this._items, childMap)
   }
 
   *levels() {
@@ -110,6 +127,11 @@ export class VirtualTree<K, T> {
       const level = item[1] + 1
       stack.push(...children.map(id => [id, level] as const))
     }
+  }
+
+  children(id: ItemId): Item<K, T>[] {
+    const childIds = this._childMap.get(id)
+    return childIds?.map(id => this._items.get(id)).filter(notNull) ?? []
   }
 
   private mapItem(id: ItemId): Item<K, T> | undefined {
