@@ -72,6 +72,7 @@ export function updateSelection<K>(
     return { mode, focus: keys }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (mode === SelectionMode.Range) {
     const first = prev[0]
     if (first == null) {
