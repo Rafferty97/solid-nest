@@ -49,8 +49,14 @@ export class VirtualTree<K, T> {
     return new VirtualTree(rootItem, items, childMap)
   }
 
-  findItem(id: ItemId): Item<K, T> | undefined {
+  findItemById(id: ItemId): Item<K, T> | undefined {
     return this._items.get(id)
+  }
+
+  findParent(id: ItemId): ItemId | undefined {
+    for (const [parentId, children] of this._childMap.entries()) {
+      if (children.includes(id)) return parentId
+    }
   }
 
   removeBlocks(keys: Iterable<K>): VirtualTree<K, T> {

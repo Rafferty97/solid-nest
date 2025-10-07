@@ -1,5 +1,6 @@
-import { Item, RootItem } from './Item'
+import { createBlockItemId, Item } from './Item'
 import { modifierKey } from './util/modifierKey'
+import { notNull } from './util/notNull'
 import { VirtualTree } from './virtual-tree'
 
 export enum SelectionMode {
@@ -73,34 +74,33 @@ export function updateSelection<K>(
     return { mode, focus: keys }
   }
 
-  // if (mode === SelectionMode.Range) {
-  //   const first = prev[0]
-  //   if (first == null) {
-  //     return { mode, focus: [key] }
-  //   }
+  if (mode === SelectionMode.Range) {
+    const first = prev[0]
+    if (first == null) {
+      return { mode, focus: [key] }
+    }
 
-  //   const items_ = items()
-  //   const i = items_.findIndex(item => item.key === first)
-  //   const j = items_.findIndex(item => item.key === key)
-  //   if (!items_[i] || !items_[j] || items_[i].level !== items_[j].level) {
-  //     return { mode, focus: prev.slice() }
-  //   }
+    const parentId = tree.findParent(createBlockItemId(first))
+    if (!parentId) {
+      return { mode, focus: [key] }
+    }
 
-  //   const keys: K[] = []
-  //   const level = items_[i].level
-  //   for (let k = Math.min(i, j); k <= Math.max(i, j); k++) {
-  //     const item = items_[k]
-  //     if (item?.kind !== 'block' || item.level > level) continue
-  //     if (item.level < level) {
-  //       return { mode, focus: prev.slice() }
-  //     }
-  //     keys.push(item.key)
-  //   }
+    const children = tree
+      .children(parentId)
+      .map(item => (item.kind === 'block' ? item.key : null))
+      .filter(notNull)
 
-  //   if (i > j) keys.reverse()
+    const i = children.indexOf(first)
+    const j = children.indexOf(key)
+    if (i < 0 || j < 0) {
+      return { mode, focus: [key] }
+    }
 
-  //   return { mode, focus: keys }
-  // }
+    const keys = children.slice(Math.min(i, j), Math.max(i, j) + 1)
+    if (i > j) keys.reverse()
+
+    return { mode, focus: keys }
+  }
 
   return { mode, focus: [] }
 }

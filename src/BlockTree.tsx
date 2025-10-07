@@ -294,7 +294,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
           const blocks = tree.children(RootItemId)
           const top = createMemo(() => {
             const state = dragState()
-            return state && tree.findItem(state.topItem)
+            return state && tree.findItemById(state.topItem)
           })
           return (
             <div style={dragContainerStyle()}>

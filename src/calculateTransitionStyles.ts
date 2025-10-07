@@ -29,7 +29,7 @@ export function calculateTransitionStyles<K>(
   const [prevGap, nextGap] = [prevRects.get(DropzoneItemId), nextRects.get(DropzoneItemId)]
   if (!prevGap && nextGap) {
     const calcHeight = () => {
-      const dropzone = nextTree.findItem(DropzoneItemId)
+      const dropzone = nextTree.findItemById(DropzoneItemId)
       const itemId = dropzone?.kind === 'gap' && dropzone.before
       if (!itemId) return 0
       const [prevItem, nextItem] = [prevRects.get(itemId), nextRects.get(itemId)]
