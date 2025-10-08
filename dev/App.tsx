@@ -72,6 +72,7 @@ const App: Component = () => {
             )}
             data-drag-handle
           >
+            <input />
             <div>{block.data}</div>
             {block.children}
             <div>Footer</div>

@@ -36,8 +36,6 @@ export function createDnd<K, T>(
     const state = clickedBlock()
     if (!state) return
 
-    console.log('entry')
-
     const onmove = (ev: MouseEvent) => {
       setPointerPos({ x: ev.clientX, y: ev.clientY })
 
@@ -50,12 +48,10 @@ export function createDnd<K, T>(
       }
     }
     const onup = () => {
-      console.log('UP!')
+      setClickedBlock()
+
       const drag = dragState()
-      if (!drag) {
-        setClickedBlock()
-        return
-      }
+      if (!drag) return
 
       const insert = insertion()
 

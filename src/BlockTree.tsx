@@ -227,15 +227,26 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       if (!ev.isPrimary) return
       if (item.kind !== 'block') return
 
+      // ev.preventDefault()
       ev.stopPropagation()
 
       const mode = calculateSelectionMode(ev, options().multiselect)
       newSelection = updateSelection(tree(), selectedBlocks(), item.key, mode)
 
+      // const ids = newSelection['focus']
+      // if (ids) {
+      //   props.onSelectionChange?.({
+      //     kind: 'blocks',
+      //     key: item.key,
+      //     mode: newSelection.mode,
+      //     blocks: ids,
+      //   })
+      // }
+
       if (ev.target instanceof HTMLElement && ev.currentTarget instanceof HTMLElement) {
         for (const el of ev.currentTarget.querySelectorAll('[data-drag-handle]')) {
           if (el.contains(ev.target)) {
-            onDragHandleClick(ev, item.key)
+            // onDragHandleClick(ev, item.key)
             break
           }
         }
