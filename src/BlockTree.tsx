@@ -85,7 +85,6 @@ export type BlockProps<K, T> = {
   selected: boolean
   dragging: boolean
   children: JSX.Element
-  startDrag: (ev: MouseEvent) => void
 }
 
 export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
@@ -141,8 +140,13 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
 
   const inputTree = createMemo(() => VirtualTree.create(props.root))
 
-  const dnd = createDnd(inputTree, options, itemElements, ev => props.onReorder?.(ev))
-  const { treeWithDropzone, dragTree, dragState, dragPosition, startDrag } = dnd
+  const blocksToDrag = createMemo(() => {
+    const keys = normaliseSelection(inputTree(), selectedBlocks())
+    return keys.map(key => blockMap().get(key)).filter(notNull)
+  })
+
+  const dnd = createDnd(inputTree, options, itemElements, blocksToDrag, ev => props.onReorder?.(ev))
+  const { treeWithDropzone, dragTree, dragState, dragPosition, onDragHandleClick } = dnd
 
   const { tree, styles } = createAnimations(treeWithDropzone, itemElements, options)
 
@@ -217,22 +221,25 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     itemProps: { dragging?: boolean } = {},
     styles?: Accessor<Map<string, AnimationState>>,
   ) => {
-    const onStartDrag = (ev: MouseEvent) => {
-      if (item.kind !== 'block') return
-
-      const keys = normaliseSelection(tree(), selectedBlocks())
-      const blocks = keys.map(key => blockMap().get(key)).filter(notNull)
-      startDrag(ev, item.key, blocks)
-    }
-
     let newSelection: UpdateSelectReturn<K> | undefined
 
-    const handleBlockMouseDown = (ev: MouseEvent) => {
+    const handlePointerDown = (ev: PointerEvent) => {
+      if (!ev.isPrimary) return
       if (item.kind !== 'block') return
 
       ev.stopPropagation()
+
       const mode = calculateSelectionMode(ev, options().multiselect)
       newSelection = updateSelection(tree(), selectedBlocks(), item.key, mode)
+
+      if (ev.target instanceof HTMLElement && ev.currentTarget instanceof HTMLElement) {
+        for (const el of ev.currentTarget.querySelectorAll('[data-drag-handle]')) {
+          if (el.contains(ev.target)) {
+            onDragHandleClick(ev, item.key)
+            break
+          }
+        }
+      }
     }
 
     const selectionUpdateHandler = (event: 'focus' | 'click') => (ev: Event) => {
@@ -258,7 +265,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
         class={blockClass}
         data-kind={item.kind}
         style={outerStyle(styles?.().get(item.id))}
-        onMouseDown={handleBlockMouseDown}
+        onPointerDown={handlePointerDown}
         onFocus={selectionUpdateHandler('focus')}
         onClick={selectionUpdateHandler('click')}
         tabIndex={item.kind === 'block' ? -1 : undefined}
@@ -277,7 +284,6 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
               data={item.data}
               selected={selectedBlocks().includes(item.key)}
               dragging={itemProps.dragging === true}
-              startDrag={onStartDrag}
             >
               {renderItems(item.id, tree, styles)}
             </Dynamic>

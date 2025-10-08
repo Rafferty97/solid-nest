@@ -70,8 +70,7 @@ const App: Component = () => {
             class={[styles.block, block.selected ? styles.selected : '', block.dragging ? styles.dragging : ''].join(
               ' ',
             )}
-            draggable={true}
-            onDragStart={block.startDrag}
+            data-drag-handle
           >
             <div>{block.data}</div>
             {block.children}
