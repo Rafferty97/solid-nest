@@ -23,7 +23,7 @@ import {
   dropzoneStyle,
   placeholderStyle,
 } from './calculateTransitionStyles'
-import { calculateSelectionMode, normaliseSelection, SelectionMode, updateSelection } from './selection'
+import { calculateSelectionMode, normaliseSelection, updateSelection } from './selection'
 import { createDnd } from './dnd/createDnd'
 import { notNull } from './util/notNull'
 import { Dropzone } from './components/Dropzone'
