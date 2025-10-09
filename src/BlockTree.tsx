@@ -141,7 +141,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     }
   })
 
-  const inputTree = createMemo(() => VirtualTree.create(props.root))
+  const inputTree = VirtualTree.create(() => props.root)
 
   const blocksToDrag = (key: K) => {
     const selection_ = selectedBlocks()

@@ -1,4 +1,4 @@
-import { Accessor, createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
+import { Accessor, createEffect, createMemo, createSignal, onCleanup, untrack } from 'solid-js'
 import { createBlockItemId, ItemId, RootItemId } from '../Item'
 import { Vec2 } from '../util/types'
 import { measureBlock, measureBlocks } from 'src/measure'
@@ -170,7 +170,7 @@ export function createDnd<K, T>(
   // Visualise the dragged item(s)
   const dragTree = createMemo(() => {
     const state = dragState()
-    return state && input().extractBlocks(state.keys)
+    return state && untrack(input).extractBlocks(state.keys)
   })
 
   // Handle point down event on drag handles

@@ -67,7 +67,6 @@ const App: Component = () => {
       >
         {block => {
           const [text, setText] = createSignal('')
-          console.log('render', block.key)
 
           return (
             <div

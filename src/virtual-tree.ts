@@ -1,3 +1,4 @@
+import { Accessor, createMemo } from 'solid-js'
 import { Block, RootBlock } from './Block'
 import { Place } from './events'
 import {
@@ -26,27 +27,39 @@ export class VirtualTree<K, T> {
     this._childMap = childMap
   }
 
-  static create<K, T>(root: RootBlock<K, T>): VirtualTree<K, T> {
-    const items = new Map<ItemId, Item<K, T>>()
-    const childMap = new Map<ItemId, ItemId[]>()
+  static create<K, T>(root: Accessor<RootBlock<K, T>>): Accessor<VirtualTree<K, T>> {
+    let cache = new Map<RootBlock<K, T>, BlockItem<K, T>>()
 
-    const process = (item: RootItem<K> | BlockItem<K, T>, children?: Block<K, T>[]) => {
-      items.set(item.id, item)
+    const rootItem = createMemo(() => createRootItem(root()))
 
-      children?.forEach(child => process(createBlockItem(child), child.children))
+    return createMemo(() => {
+      const items = new Map<ItemId, Item<K, T>>()
+      const childMap = new Map<ItemId, ItemId[]>()
+      const nextCache = new Map<RootBlock<K, T>, BlockItem<K, T>>()
 
-      const placeholder = createPlaceholderItem(item.key)
-      items.set(placeholder.id, placeholder)
+      const process = (item: RootItem<K> | BlockItem<K, T>, children?: Block<K, T>[]) => {
+        items.set(item.id, item)
 
-      const childIds = children?.map(child => createBlockItemId(child.key)) ?? []
-      childIds.push(placeholder.id)
-      childMap.set(item.id, childIds)
-    }
+        children?.forEach(child => {
+          const item = cache.get(child) ?? createBlockItem(child)
+          nextCache.set(child, item)
+          process(item, child.children)
+        })
 
-    const rootItem = createRootItem(root)
-    process(rootItem, root.children)
+        const placeholder = createPlaceholderItem(item.key)
+        items.set(placeholder.id, placeholder)
 
-    return new VirtualTree(rootItem, items, childMap)
+        const childIds = children?.map(child => createBlockItemId(child.key)) ?? []
+        childIds.push(placeholder.id)
+        childMap.set(item.id, childIds)
+      }
+
+      process(rootItem(), root().children)
+
+      cache = nextCache
+
+      return new VirtualTree(rootItem(), items, childMap)
+    })
   }
 
   findItemById(id: ItemId): Item<K, T> | undefined {
