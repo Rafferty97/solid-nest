@@ -23,6 +23,7 @@ Care has been taken to ensure everything "just works" with minimal configuration
 - **Smooth animations** - Performant transitions with no jank
 - **(Nearly) Headless UI** - Bring your own styles and components*
 - **Tag-based constraints** - Control which blocks can be nested where
+- **Mobile support** - Supports both mouse and touch events
 
 _*Some minor styling is provided for convenience, but it's easy to override_
 
@@ -73,12 +74,11 @@ function App() {
     <BlockTree {...props}>
       {/* Defines how each block in the tree should be rendered */}
       {block => (
-        <div
-          class="border rounded p-4"
-          draggable={true}
-          onDragStart={block.startDrag}
-        >
-          <p>{block.data}</p>
+        <div class="border rounded p-4">
+          {/* Add data-drag-handle to elements that should initiate drag */}
+          <div data-drag-handle class="cursor-grab">
+            <p>{block.data}</p>
+          </div>
           <div class="mt-4">
             {block.children}
           </div>
@@ -100,14 +100,14 @@ The `BlockTree` is the primary component exposed by this library, and is used as
   // The only required prop - the root block of the tree
   root={root}
   // The currently selected blocks
-  selection={['key1', 'key2']}
+  selection={{ blocks: ['key1', 'key2'] }}
   // Various event handlers; because this is a controlled component,
   // the state of the tree won't update unless these are handled
   onSelectionChange={event => {}}
   onInsert={event => {}}
   onReorder={event => {}}
   onRemove={event => {}}
-  // ...various additional configuration props, documented below
+  // ...various additional events and configuration props, documented below
 >
   {/* A function to render each block in the tree */}
   {block => <YourBlockComponent {...block} />}
@@ -143,12 +143,12 @@ type Block<K, T> = {
 ### Root Block
 
 The root block is the top-level container, and is not actually rendered in the UI.
-Therefore, it does not need a `data` property, though `children` is required (or else nothing would render).
+Therefore, it does not need a `data` property.
 
 ```tsx
 type RootBlock<K, T> = {
   key: K
-  children: Block<K, T>[]
+  children?: Block<K, T>[]
   tag?: string
   accepts?: string[]
   spacing?: number
@@ -168,7 +168,7 @@ most if not all of the event handlers too, otherwise the block tree won't be edi
 |------|------|---------|-------------|
 | `root` | `RootBlock<K, T>` | *required* | The root block of the tree |
 | `children` | `Component<BlockProps<K, T>>` | *required* | Render function for blocks |
-| `selection` | `Selection<K>` | | Current selection (blocks or insertion point) |
+| `selection` | `Selection<K>` | | Current selection |
 | `onSelectionChange` | `EventHandler<SelectionEvent<K>>` | | Called when selection changes |
 | `onInsert` | `EventHandler<InsertEvent<K, T>>` | | Called when blocks are inserted |
 | `onReorder` | `EventHandler<ReorderEvent<K>>` | | Called when blocks are reordered |
@@ -178,11 +178,28 @@ most if not all of the event handlers too, otherwise the block tree won't be edi
 | `onPaste` | `EventHandler<PasteEvent<K>>` | | Called when blocks are pasted |
 | `defaultSpacing` | `number` | `12` | Default spacing between blocks (px) |
 | `transitionDuration` | `number` | `200` | Animation duration (ms) |
+| `dragThreshold` | `number` | `10` | Distance cursor must move (px) to start drag |
 | `fixedHeightWhileDragging` | `boolean` | `false` | Fix container height during drag operations |
 | `multiselect` | `boolean` | `true` | Enable multi-selection |
 | `dropzone` | `Component<{}>` | | Custom dropzone component |
 | `placeholder` | `Component<{ parent: K }>` | | Custom placeholder component |
 | `dragContainer` | `Component<DragContainerProps<K, T>>` | | Custom drag container component |
+
+### Selections
+
+A `Selection` can either be:
+- A set of blocks (when `blocks` has a value)
+- A place between blocks, like an insertion cursor (when `place` has a value)
+- Empty (when neither property has a value)
+
+It is not valid for both properties to have a value at the same time.
+
+```ts
+type Selection<K> = {
+  blocks?: K[]
+  place?: Place<K>
+}
+```
 
 ### Block Render Props
 
@@ -194,12 +211,26 @@ The `BlockTree` render function receives these props for each block:
 | `data` | `T` | Your custom data |
 | `selected` | `boolean` | Whether block is currently selected |
 | `dragging` | `boolean` | Whether block is being dragged |
-| `startDrag` | `(ev: MouseEvent) => void` | Call this to initiate drag operation |
 | `children` | `JSX.Element` | Rendered child blocks |
 
 It's perfectly fine not to render the `children` in the render function, or only conditionally render it.
 This will prevent the user from inserting any new child blocks via drag-and-drop, though any existing children
 will remain unless programmatically removed.
+
+### Making blocks draggable
+
+To make an element draggable, add the `data-drag-handle` attribute to it. When a user clicks and drags an element with this attribute, it will initiate a drag operation for the block. The entire block can be made draggable by adding this attribute to the root element.
+
+If there are any elements inside the block that should be able to take focus, like `input` elements, ensure you add an event handler for the `onPointerDown` event that calls `event.stopPropagation`, otherwise focus will be immediately lost and the block itself will become selected.
+
+```tsx
+{block => (
+  <div data-drag-handle>
+    <p>Some text</p>
+    <input onPointerDown={ev => ev.stopPropagation()} />
+  </div>
+)}
+```
 
 ## Events
 
@@ -374,6 +405,16 @@ return (
 
 **Note:** `createBlockTree` provides handlers for `onSelectionChange`, `onInsert`, `onReorder`, and `onRemove`.
 If you need copy/cut/paste functionality, you'll need to implement those handlers separately.
+
+### Additional Methods
+
+The object returned by `createBlockTree` also includes these additional methods:
+
+- **`toggleBlockSelected(key: K, selected: boolean)`** - Toggle a block's selection state
+- **`selectBlock(key: K)`** - Select a specific block
+- **`unselectBlock(key: K)`** - Unselect a specific block
+- **`updateBlock(key: K, data: T)`** - Update a block's data
+- **`setRoot`** - The raw `setStoreFunction`, allowing you to make arbitrary updates to the tree state
 
 See [`createBlockTree.ts`](https://github.com/Rafferty97/solid-nest/blob/main/src/createBlockTree.ts) to get an idea
 for how you might implement your own state management system or integrate your existing one with `solid-nest`.

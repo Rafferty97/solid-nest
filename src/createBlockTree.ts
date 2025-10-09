@@ -26,10 +26,12 @@ export function createBlockTree<K, T>(init: RootBlock<K, T>) {
 
   return {
     root,
+    setRoot,
 
     get selection() {
       return selection()
     },
+    setSelection,
 
     onSelectionChange(event: SelectionEvent<K>) {
       setSelection(event)
@@ -87,7 +89,7 @@ export function createBlockTree<K, T>(init: RootBlock<K, T>) {
 }
 
 /** Utility function to find a block in a tree with a given `key`. */
-export function findBlock<K, T>(root: RootBlock<K, T>, key: K): Block<K, T> | RootBlock<K, T> | undefined {
+function findBlock<K, T>(root: RootBlock<K, T>, key: K): Block<K, T> | RootBlock<K, T> | undefined {
   if (root.key === key) {
     return root
   }
@@ -102,7 +104,7 @@ export function findBlock<K, T>(root: RootBlock<K, T>, key: K): Block<K, T> | Ro
 /**
  * Removes blocks with the given set of `keys`,
  * optionally accumulating them into the `collect` array. */
-export function removeBlocks<K, T>(root: RootBlock<K, T>, keys: K[], collect?: Block<K, T>[]) {
+function removeBlocks<K, T>(root: RootBlock<K, T>, keys: K[], collect?: Block<K, T>[]) {
   root.children = root.children?.filter(child => {
     if (!keys.includes(child.key)) {
       removeBlocks(child, keys, collect)
@@ -112,8 +114,9 @@ export function removeBlocks<K, T>(root: RootBlock<K, T>, keys: K[], collect?: B
     return false
   })
 }
+
 /** Inserts `blocks` into the tree at the specified `place`. */
-export function insertBlocks<K, T>(root: RootBlock<K, T>, blocks: Block<K, T>[], place: Place<K>) {
+function insertBlocks<K, T>(root: RootBlock<K, T>, blocks: Block<K, T>[], place: Place<K>) {
   const parent = findBlock(root, place.parent)
   if (!parent) return
 
