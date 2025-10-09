@@ -1,4 +1,4 @@
-import { Accessor, Component, createMemo, For, JSX, onMount, Show } from 'solid-js'
+import { Accessor, Component, createMemo, For, JSX, onCleanup, onMount, Show } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { Block, BlockOptions, RootBlock } from './Block'
 import { Item, ItemId, RootItemId } from './Item'
@@ -220,22 +220,47 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     props.onPaste?.({ place, data })
   }
 
+  let removeClickHandler: (() => void) | undefined
+
+  onMount(() => {
+    const ondown = () => removeClickHandler?.()
+    document.addEventListener('pointerdown', ondown, { capture: true })
+    onCleanup(() => document.removeEventListener('pointerdown', ondown, { capture: true }))
+  })
+
   const renderItem = (
     item: Item<K, T>,
     tree: Accessor<VirtualTree<K, T>>,
     itemProps: { dragging?: boolean } = {},
     styles?: Accessor<Map<string, AnimationState>>,
   ) => {
-    let nextSelect: { mode: SelectionMode; keys: K[]; onClick?: boolean; focused?: boolean } | undefined
-
     const handlePointerDown = (ev: PointerEvent) => {
       if (!ev.isPrimary) return
       if (item.kind !== 'block') return
 
+      ev.preventDefault()
       ev.stopPropagation()
 
       const mode = calculateSelectionMode(ev, options().multiselect)
-      nextSelect = updateSelection(tree(), selectedBlocks(), item.key, mode)
+      const nextSelection = updateSelection(tree(), selectedBlocks(), item.key, mode)
+
+      const select = () => {
+        const { mode, keys } = nextSelection
+        props.onSelectionChange?.({ kind: 'blocks', key: item.key, mode, blocks: keys })
+        topElement.focus({ preventScroll: true })
+      }
+
+      if (nextSelection.onClick) {
+        const handler = (ev: Event) => {
+          ev.preventDefault()
+          ev.stopPropagation()
+          select()
+        }
+        ev.currentTarget?.addEventListener('click', handler, { once: true })
+        removeClickHandler = () => ev.currentTarget?.removeEventListener('click', handler)
+      } else {
+        select()
+      }
 
       if (ev.target instanceof HTMLElement && ev.currentTarget instanceof HTMLElement) {
         for (const el of ev.currentTarget.querySelectorAll('[data-drag-handle]')) {
@@ -247,32 +272,6 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       }
     }
 
-    const selectionUpdateHandler = (event: 'focus' | 'click') => (ev: Event) => {
-      if (item.kind !== 'block') return
-
-      ev.stopPropagation()
-
-      if (event === 'focus') {
-        setTimeout(() => topElement.focus({ preventScroll: true }), 0)
-      }
-
-      if (!nextSelect) return
-      if (event === 'focus' && nextSelect.onClick) {
-        nextSelect.focused = true
-        return
-      }
-      if (event === 'click' && !(nextSelect.onClick && nextSelect.focused)) {
-        return
-      }
-
-      props.onSelectionChange?.({
-        kind: 'blocks',
-        key: item.key,
-        mode: nextSelect.mode,
-        blocks: nextSelect.keys,
-      })
-    }
-
     return (
       <div
         ref={el => itemElements.set(item.id, el)}
@@ -280,9 +279,6 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
         data-kind={item.kind}
         style={outerStyle(styles?.().get(item.id))}
         onPointerDown={handlePointerDown}
-        onFocus={selectionUpdateHandler('focus')}
-        onClick={selectionUpdateHandler('click')}
-        tabIndex={item.kind === 'block' ? -1 : undefined}
       >
         {item.kind === 'block' && (
           <div
@@ -341,9 +337,6 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       data-kind="root"
       onFocusOut={ev => {
         if (ev.relatedTarget === topElement) return
-        if (ev.relatedTarget instanceof HTMLElement && ev.relatedTarget.classList.contains(blockClass)) {
-          return
-        }
         props.onSelectionChange?.({ kind: 'deselect' })
       }}
       onKeyDown={handleKeyDown}

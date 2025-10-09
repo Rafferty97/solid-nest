@@ -1,4 +1,4 @@
-import { createUniqueId, type Component } from 'solid-js'
+import { createSignal, createUniqueId, type Component } from 'solid-js'
 import { Block, BlockTree, CopyEvent, PasteEvent, RootBlock, createBlockTree } from 'src'
 import styles from './App.module.css'
 
@@ -65,27 +65,41 @@ const App: Component = () => {
         onPaste={onPaste}
         placeholder={() => <div class={styles.placeholder}>nothing here</div>}
       >
-        {block => (
-          <div
-            class={[styles.block, block.selected ? styles.selected : '', block.dragging ? styles.dragging : ''].join(
-              ' ',
-            )}
-            data-drag-handle
-          >
-            <div class={styles.blockHeader}>
-              <div>{block.data}</div>
+        {block => {
+          const [text, setText] = createSignal('')
+          console.log('render', block.key)
+
+          return (
+            <div
+              class={[styles.block, block.selected ? styles.selected : '', block.dragging ? styles.dragging : ''].join(
+                ' ',
+              )}
+              data-drag-handle
+            >
+              <div class={styles.blockHeader}>
+                <div>{block.data}</div>
+                <input
+                  type="checkbox"
+                  checked={block.selected}
+                  onPointerDown={ev => {
+                    ev.preventDefault()
+                    ev.stopPropagation()
+                  }}
+                  onChange={ev => props.toggleBlockSelected(block.key, ev.currentTarget.checked)}
+                />
+              </div>
               <input
-                type="checkbox"
-                checked={block.selected}
-                onPointerDown={ev => ev.preventDefault()}
-                onChange={ev => props.toggleBlockSelected(block.key, ev.currentTarget.checked)}
+                type="text"
+                placeholder="Type something"
+                onPointerDown={ev => ev.stopPropagation()}
+                value={text()}
+                onChange={ev => setText(ev.currentTarget.value)}
               />
+              {block.children}
+              <div>Footer</div>
             </div>
-            <input type="text" placeholder="Type something" />
-            {block.children}
-            <div>Footer</div>
-          </div>
-        )}
+          )
+        }}
       </BlockTree>
       <button style={{ 'margin-top': '20px' }} onClick={appendBlock}>
         Append block
