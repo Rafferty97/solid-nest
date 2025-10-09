@@ -72,8 +72,16 @@ const App: Component = () => {
             )}
             data-drag-handle
           >
-            <input />
-            <div>{block.data}</div>
+            <div class={styles.blockHeader}>
+              <div>{block.data}</div>
+              <input
+                type="checkbox"
+                checked={block.selected}
+                onPointerDown={ev => ev.preventDefault()}
+                onChange={ev => props.toggleBlockSelected(block.key, ev.currentTarget.checked)}
+              />
+            </div>
+            <input type="text" placeholder="Type something" />
             {block.children}
             <div>Footer</div>
           </div>

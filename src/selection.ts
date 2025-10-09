@@ -35,26 +35,10 @@ export function calculateSelectionMode(ev: MouseEvent, multiselect: boolean) {
   return SelectionMode.Set
 }
 
-export type UpdateSelectReturn<K> = {
-  mode: SelectionMode
-  focus?: K[]
-  click?: K[]
-}
-
-export function updateSelection<K>(
-  tree: VirtualTree<K, unknown>,
-  prev: K[],
-  key: K,
-  mode: SelectionMode,
-): UpdateSelectReturn<K> {
+export function updateSelection<K>(tree: VirtualTree<K, unknown>, prev: K[], key: K, mode: SelectionMode) {
   if (mode === SelectionMode.Set) {
-    const next = [key]
-
-    if (prev.includes(key)) {
-      return { mode, focus: prev.slice(), click: next }
-    } else {
-      return { mode, focus: next }
-    }
+    const onClick = prev.includes(key)
+    return { mode, keys: [key], onClick }
   }
 
   if (mode === SelectionMode.Toggle) {
@@ -69,19 +53,19 @@ export function updateSelection<K>(
       keys.splice(index, 1)
     }
 
-    return { mode, focus: keys }
+    return { mode, keys }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (mode === SelectionMode.Range) {
     const first = prev[0]
     if (first == null) {
-      return { mode, focus: [key] }
+      return { mode, keys: [key] }
     }
 
     const parentId = tree.findParent(createBlockItemId(first))
     if (!parentId) {
-      return { mode, focus: [key] }
+      return { mode, keys: [key] }
     }
 
     const children = tree
@@ -92,16 +76,16 @@ export function updateSelection<K>(
     const i = children.indexOf(first)
     const j = children.indexOf(key)
     if (i < 0 || j < 0) {
-      return { mode, focus: [key] }
+      return { mode, keys: [key] }
     }
 
     const keys = children.slice(Math.min(i, j), Math.max(i, j) + 1)
     if (i > j) keys.reverse()
 
-    return { mode, focus: keys }
+    return { mode, keys }
   }
 
-  return { mode, focus: [] }
+  return { mode, keys: [] }
 }
 
 export function normaliseSelection<K>(tree: VirtualTree<K, unknown>, keys: K[]): K[] {

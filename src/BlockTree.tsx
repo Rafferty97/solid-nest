@@ -23,7 +23,7 @@ import {
   dropzoneStyle,
   placeholderStyle,
 } from './calculateTransitionStyles'
-import { calculateSelectionMode, normaliseSelection, updateSelection, UpdateSelectReturn } from './selection'
+import { calculateSelectionMode, normaliseSelection, SelectionMode, updateSelection } from './selection'
 import { createDnd } from './dnd/createDnd'
 import { notNull } from './util/notNull'
 import { Dropzone } from './components/Dropzone'
@@ -66,6 +66,8 @@ export type BlockTreeProps<K, T> = {
   defaultSpacing?: number
   /** Duration of transition animations, in milliseconds. */
   transitionDuration?: number
+  /** Distance the cursor must move, in pixels, for a drag to be detected. */
+  dragThreshold?: number
   /**
    * Forces the container to maintain a fixed height while dragging is in progress;
    * useful for preventing odd behaviour when the component is inside a scrollable element.
@@ -98,6 +100,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     defaultSpacing: props.defaultSpacing ?? 12,
     dragRadius: { x: 1.2, y: 1.5 },
     multiselect: props.multiselect ?? true,
+    dragThreshold: props.dragThreshold ?? 10,
   }))
 
   const blockMap = createMemo(() => {
@@ -140,10 +143,12 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
 
   const inputTree = createMemo(() => VirtualTree.create(props.root))
 
-  const blocksToDrag = createMemo(() => {
-    const keys = normaliseSelection(inputTree(), selectedBlocks())
-    return keys.map(key => blockMap().get(key)).filter(notNull)
-  })
+  const blocksToDrag = (key: K) => {
+    const selection_ = selectedBlocks()
+    return normaliseSelection(inputTree(), selection_.includes(key) ? selection_ : [key])
+      .map(key => blockMap().get(key))
+      .filter(notNull)
+  }
 
   const dnd = createDnd(inputTree, options, itemElements, blocksToDrag, ev => props.onReorder?.(ev))
   const { treeWithDropzone, dragTree, dragState, dragPosition, onDragHandleClick } = dnd
@@ -221,32 +226,21 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     itemProps: { dragging?: boolean } = {},
     styles?: Accessor<Map<string, AnimationState>>,
   ) => {
-    let newSelection: UpdateSelectReturn<K> | undefined
+    let nextSelect: { mode: SelectionMode; keys: K[]; onClick?: boolean; focused?: boolean } | undefined
 
     const handlePointerDown = (ev: PointerEvent) => {
       if (!ev.isPrimary) return
       if (item.kind !== 'block') return
 
-      // ev.preventDefault()
       ev.stopPropagation()
 
       const mode = calculateSelectionMode(ev, options().multiselect)
-      newSelection = updateSelection(tree(), selectedBlocks(), item.key, mode)
-
-      // const ids = newSelection['focus']
-      // if (ids) {
-      //   props.onSelectionChange?.({
-      //     kind: 'blocks',
-      //     key: item.key,
-      //     mode: newSelection.mode,
-      //     blocks: ids,
-      //   })
-      // }
+      nextSelect = updateSelection(tree(), selectedBlocks(), item.key, mode)
 
       if (ev.target instanceof HTMLElement && ev.currentTarget instanceof HTMLElement) {
         for (const el of ev.currentTarget.querySelectorAll('[data-drag-handle]')) {
           if (el.contains(ev.target)) {
-            // onDragHandleClick(ev, item.key)
+            onDragHandleClick(ev, item.key)
             break
           }
         }
@@ -258,16 +252,25 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
 
       ev.stopPropagation()
 
-      const ids = newSelection?.[event]
-      if (!newSelection || !ids) return
+      if (event === 'focus') {
+        setTimeout(() => topElement.focus({ preventScroll: true }), 0)
+      }
+
+      if (!nextSelect) return
+      if (event === 'focus' && nextSelect.onClick) {
+        nextSelect.focused = true
+        return
+      }
+      if (event === 'click' && !(nextSelect.onClick && nextSelect.focused)) {
+        return
+      }
 
       props.onSelectionChange?.({
         kind: 'blocks',
         key: item.key,
-        mode: newSelection.mode,
-        blocks: ids,
+        mode: nextSelect.mode,
+        blocks: nextSelect.keys,
       })
-      setTimeout(() => topElement.focus({ preventScroll: true }), 0)
     }
 
     return (
@@ -338,6 +341,9 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       data-kind="root"
       onFocusOut={ev => {
         if (ev.relatedTarget === topElement) return
+        if (ev.relatedTarget instanceof HTMLElement && ev.relatedTarget.classList.contains(blockClass)) {
+          return
+        }
         props.onSelectionChange?.({ kind: 'deselect' })
       }}
       onKeyDown={handleKeyDown}

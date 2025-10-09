@@ -51,6 +51,27 @@ export function createBlockTree<K, T>(init: RootBlock<K, T>) {
     onRemove(event: RemoveEvent<K>) {
       setRoot(produce(root => removeBlocks(root, event.keys)))
     },
+
+    toggleBlockSelected(key: K, selected: boolean) {
+      const prev = selection()
+      if (!prev.blocks) {
+        setSelection({ blocks: selected ? [key] : [] })
+      } else {
+        const blocks = prev.blocks.filter(k => k !== key)
+        if (selected) {
+          blocks.push(key)
+        }
+        setSelection({ blocks })
+      }
+    },
+
+    selectBlock(key: K) {
+      this.toggleBlockSelected(key, true)
+    },
+
+    unselectBlock(key: K) {
+      this.toggleBlockSelected(key, false)
+    },
   }
 }
 

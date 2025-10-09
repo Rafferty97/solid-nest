@@ -1,4 +1,4 @@
-import { Accessor, batch, createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
+import { Accessor, createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
 import { createBlockItemId, ItemId, RootItemId } from '../Item'
 import { Vec2 } from '../util/types'
 import { measureBlock, measureBlocks } from 'src/measure'
@@ -22,9 +22,9 @@ type ClickedBlock<K> = {
 
 export function createDnd<K, T>(
   input: Accessor<VirtualTree<K, T>>,
-  options: Accessor<{ defaultSpacing: number; dragRadius: Vec2 }>,
+  options: Accessor<{ defaultSpacing: number; dragRadius: Vec2; dragThreshold: number }>,
   itemElements: Map<ItemId, HTMLElement>,
-  blocks: Accessor<Block<K, T>[]>,
+  getBlocksToDrag: (key: K) => Block<K, T>[],
   onReorder: EventHandler<ReorderEvent<K>>,
 ) {
   // Create drag state
@@ -43,10 +43,12 @@ export function createDnd<K, T>(
 
       const dx = ev.clientX - state.pointer.x
       const dy = ev.clientY - state.pointer.y
-      if (dx * dx + dy * dy > 200) {
+      const threshold = Math.pow(options().dragThreshold, 2)
+      if (dx * dx + dy * dy > threshold) {
         startDrag(state.key, state.pointer)
       }
     }
+
     const onup = () => {
       setClickedBlock()
 
@@ -61,12 +63,18 @@ export function createDnd<K, T>(
       setDragState(undefined)
     }
 
-    document.addEventListener('mousemove', onmove)
-    document.addEventListener('mouseup', onup)
+    const oncancel = () => {
+      // todo
+    }
+
+    document.addEventListener('pointermove', onmove, { passive: false })
+    document.addEventListener('pointerup', onup)
+    document.addEventListener('pointercancel', oncancel)
 
     onCleanup(() => {
-      document.removeEventListener('mousemove', onmove)
-      document.removeEventListener('mouseup', onup)
+      document.removeEventListener('pointermove', onmove)
+      document.removeEventListener('pointerup', onup)
+      document.removeEventListener('pointercancel', oncancel)
     })
   })
 
@@ -148,7 +156,8 @@ export function createDnd<K, T>(
   // Handle drag start events
   // const onPointerDown = (ev: MouseEvent, key: K, blocks: Block<K, T>[]) => {
   const startDrag = (key: K, pointer: Vec2) => {
-    const topKey = blocks().find(block => containsChild(block, key))?.key
+    const blocks = getBlocksToDrag(key)
+    const topKey = blocks.find(block => containsChild(block, key))?.key
     if (!topKey) return
 
     const topItem = createBlockItemId(topKey)
@@ -157,18 +166,19 @@ export function createDnd<K, T>(
 
     const topRect = measureBlock(topElem).outer
 
-    const keys = blocks().map(block => block.key)
+    const keys = blocks.map(block => block.key)
     const offset = { x: topRect.x - pointer.x, y: topRect.y - pointer.y }
     const size = { x: topRect.width, y: topRect.height }
     const tags = new Set<string>()
-    for (const { tag } of blocks()) {
+    for (const { tag } of blocks) {
       if (tag) tags.add(tag)
     }
 
     setDragState({ keys, topItem, offset, size, tags: [...tags] })
   }
 
-  const onDragHandleClick = (ev: MouseEvent, key: K) => {
+  const onDragHandleClick = (ev: PointerEvent, key: K) => {
+    if (ev.button !== 0) return
     const pointer = { x: ev.clientX, y: ev.clientY }
     setClickedBlock({ key, pointer })
   }
