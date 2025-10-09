@@ -1,26 +1,26 @@
-import { createSignal, createUniqueId, type Component } from 'solid-js'
+import { createUniqueId, type Component } from 'solid-js'
 import { Block, BlockTree, CopyEvent, PasteEvent, RootBlock, createBlockTree } from 'src'
 import styles from './App.module.css'
 
 const App: Component = () => {
-  const root: RootBlock<string, string> = {
+  const root: RootBlock<string, { title: string; text: string }> = {
     key: 'root',
     children: [
       {
         key: 'a',
-        data: 'First',
+        data: { title: 'First', text: '' },
       },
       {
         key: 'b',
-        data: 'Second',
+        data: { title: 'Second', text: '' },
       },
       {
         key: 'c',
-        data: 'Third',
+        data: { title: 'Third', text: '' },
       },
       {
         key: 'd',
-        data: 'Fourth',
+        data: { title: 'Fourth', text: '' },
       },
     ],
   }
@@ -29,26 +29,29 @@ const App: Component = () => {
 
   const appendBlock = () => {
     const key = createUniqueId()
-    const block = { key, data: `Block ${key}` }
+    const block = { key, data: { title: 'New block', text: '' } }
     props.onInsert({
       blocks: [block],
       place: { parent: 'root', before: null },
     })
   }
 
-  const onCopy = (ev: CopyEvent<string, string>) => {
+  const onCopy = (ev: CopyEvent<string, { title: string; text: string }>) => {
     ev.data.setData('application/x-blocks', JSON.stringify(ev.blocks))
   }
 
-  const onCut = (ev: CopyEvent<string, string>) => {
+  const onCut = (ev: CopyEvent<string, { title: string; text: string }>) => {
     ev.data.setData('application/x-blocks', JSON.stringify(ev.blocks))
     props.onRemove({ keys: ev.blocks.map(block => block.key) })
   }
 
   const onPaste = (ev: PasteEvent<string>) => {
     const place = ev.place
-    const blocks = JSON.parse(ev.data.getData('application/x-blocks')) as Block<string, string>[]
-    const process = (block: Block<string, string>) => {
+    const blocks = JSON.parse(ev.data.getData('application/x-blocks')) as Block<
+      string,
+      { title: string; text: string }
+    >[]
+    const process = (block: Block<string, { title: string; text: string }>) => {
       block.key = createUniqueId()
       block.children?.forEach(process)
     }
@@ -65,40 +68,36 @@ const App: Component = () => {
         onPaste={onPaste}
         placeholder={() => <div class={styles.placeholder}>nothing here</div>}
       >
-        {block => {
-          const [text, setText] = createSignal('')
-
-          return (
-            <div
-              class={[styles.block, block.selected ? styles.selected : '', block.dragging ? styles.dragging : ''].join(
-                ' ',
-              )}
-              data-drag-handle
-            >
-              <div class={styles.blockHeader}>
-                <div>{block.data}</div>
-                <input
-                  type="checkbox"
-                  checked={block.selected}
-                  onPointerDown={ev => {
-                    ev.preventDefault()
-                    ev.stopPropagation()
-                  }}
-                  onChange={ev => props.toggleBlockSelected(block.key, ev.currentTarget.checked)}
-                />
-              </div>
+        {block => (
+          <div
+            class={[styles.block, block.selected ? styles.selected : '', block.dragging ? styles.dragging : ''].join(
+              ' ',
+            )}
+            data-drag-handle
+          >
+            <div class={styles.blockHeader}>
+              <div>{block.data.title}</div>
               <input
-                type="text"
-                placeholder="Type something"
-                onPointerDown={ev => ev.stopPropagation()}
-                value={text()}
-                onChange={ev => setText(ev.currentTarget.value)}
+                type="checkbox"
+                checked={block.selected}
+                onPointerDown={ev => {
+                  ev.preventDefault()
+                  ev.stopPropagation()
+                }}
+                onChange={ev => props.toggleBlockSelected(block.key, ev.currentTarget.checked)}
               />
-              {block.children}
-              <div>Footer</div>
             </div>
-          )
-        }}
+            <input
+              type="text"
+              placeholder="Type something"
+              onPointerDown={ev => ev.stopPropagation()}
+              value={block.data.text}
+              onChange={ev => props.updateBlock(block.key, { ...block.data, text: ev.currentTarget.value })}
+            />
+            {block.children}
+            <div>Footer</div>
+          </div>
+        )}
       </BlockTree>
       <button style={{ 'margin-top': '20px' }} onClick={appendBlock}>
         Append block

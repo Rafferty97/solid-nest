@@ -72,11 +72,22 @@ export function createBlockTree<K, T>(init: RootBlock<K, T>) {
     unselectBlock(key: K) {
       this.toggleBlockSelected(key, false)
     },
+
+    updateBlock(key: K, data: T) {
+      setRoot(
+        produce(root => {
+          const block = findBlock(root, key)
+          if (block && 'data' in block) {
+            block.data = data
+          }
+        }),
+      )
+    },
   }
 }
 
 /** Utility function to find a block in a tree with a given `key`. */
-export function findBlock<K, T>(root: RootBlock<K, T>, key: K): RootBlock<K, T> | undefined {
+export function findBlock<K, T>(root: RootBlock<K, T>, key: K): Block<K, T> | RootBlock<K, T> | undefined {
   if (root.key === key) {
     return root
   }
