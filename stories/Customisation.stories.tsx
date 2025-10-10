@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from 'storybook-solidjs-vite'
 import { BlockTree, createBlockTree } from '../src'
-import { BasicBlock, BasicBlockWithChildren } from './components'
+import { BasicBlock, BasicBlockWithChildren, BasicBlockWithDragHandle } from './components'
 import { MyBlock } from './types'
 import './main.css'
 
@@ -82,6 +82,18 @@ export const CustomDragContainer: Story = {
             </div>
           )}
         />
+      </div>
+    )
+  },
+}
+
+export const DragHandle: Story = {
+  render: () => {
+    const props = createBlockTree(structuredClone(basicList))
+
+    return (
+      <div style={{ 'max-width': '60ch' }}>
+        <BlockTree {...props} children={BasicBlockWithDragHandle} />
       </div>
     )
   },

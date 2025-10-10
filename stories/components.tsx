@@ -1,6 +1,7 @@
 import { Show } from 'solid-js'
 import { BlockProps } from 'src'
 import { CollapsableBlock, MyBlock } from './types'
+import { BsGripVertical } from 'solid-icons/bs'
 
 export const Placeholder = () => {
   return (
@@ -101,6 +102,41 @@ export const BasicBlockWithCollapse = (
       <Show when={props.block.open}>
         <div style={{ margin: '0.75rem 0 0 0' }}>{props.children}</div>
       </Show>
+    </div>
+  )
+}
+
+export const BasicBlockWithDragHandle = (props: BlockProps<string, MyBlock>) => {
+  return (
+    <div
+      style={{
+        position: 'relative',
+        border: '2px solid #ddd',
+        padding: '1rem 1rem 1rem 2rem',
+        'border-radius': '4px',
+        background: props.selected ? '#e3f2fd' : 'white',
+        'touch-action': 'none',
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          left: '0',
+          top: '0',
+          bottom: '0',
+          width: '1rem',
+          background: '#eee',
+          cursor: 'grab',
+          display: 'flex',
+          'align-items': 'center',
+          'justify-content': 'center',
+        }}
+        data-drag-handle
+      >
+        <BsGripVertical style={{ color: '#888', 'pointer-events': 'none' }} />
+      </div>
+      {props.block.data}
     </div>
   )
 }
