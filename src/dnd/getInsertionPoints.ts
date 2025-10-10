@@ -15,6 +15,11 @@ export function getInsertionPoints<K, T>(
 
   const layout = calculateLayout(tree, id => measures.get(id), { skipHidden: true })
 
+  const checkTag = (block: T) => {
+    const acceptedTags = tree.options(block).accepts
+    return !tags.find(tag => !acceptedTags?.includes(tag))
+  }
+
   const inner = (item: Item<K, T>, parent: K, accepts: boolean) => {
     const { id } = item
 
@@ -34,7 +39,7 @@ export function getInsertionPoints<K, T>(
 
     // Iterate children
     if (item.kind === 'block') {
-      const accepts = true // !tags.find(tag => !item.accepts?.includes(tag)) FIXME
+      const accepts = checkTag(item.block)
       for (const child of tree.children(item.id)) {
         inner(child, item.key, accepts)
       }
@@ -42,7 +47,7 @@ export function getInsertionPoints<K, T>(
   }
 
   const root = tree.root
-  const accepts = true // !tags.find(tag => !root.accepts?.includes(tag)) FIXME
+  const accepts = checkTag(root.block)
   for (const child of tree.children(root.id)) {
     inner(child, root.key, accepts)
   }

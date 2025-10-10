@@ -149,22 +149,6 @@ export class VirtualTree<K, T> {
     childMap.set(parent, children)
 
     return new VirtualTree(this, items, childMap)
-
-    // FIXME: Use `insertItems`
-  }
-
-  insertItems(ids: ItemId[], place: Place<K>) {
-    const parent = createBlockItemId(place.parent, this.root.key)
-    const before = place.before ? createBlockItemId(place.before) : createPlaceholderItemId(place.parent)
-
-    // Insert into parent
-    const childMap = new Map(this._childMap)
-    const children = childMap.get(parent)?.slice() ?? []
-    const index = children.indexOf(before)
-    children.splice(index, 0, ...ids)
-    childMap.set(parent, children)
-
-    return new VirtualTree(this, this._items, childMap)
   }
 
   extractBlocks(keys: Iterable<K>) {
