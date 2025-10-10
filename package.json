@@ -59,6 +59,7 @@
   },
   "devDependencies": {
     "@storybook/addon-docs": "9.1.10",
+    "@testing-library/jest-dom": "^6.9.1",
     "@types/node": "^20.12.12",
     "@typescript-eslint/eslint-plugin": "^7.9.0",
     "@typescript-eslint/parser": "^7.9.0",

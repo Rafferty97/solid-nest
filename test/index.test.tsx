@@ -1,9 +1,17 @@
-import { isServer } from 'solid-js/web'
-import { describe, expect, it } from 'vitest'
+import { describe, it } from 'vitest'
+import { isServer, render, renderToString } from 'solid-js/web'
+import { BlockTree } from 'src'
 
-describe('environment', () => {
-  it('runs on client', () => {
-    expect(typeof window).toBe('object')
-    expect(isServer).toBe(false)
+describe('BlockTree', () => {
+  it('can be instantiated', () => {
+    const App = () => {
+      return <BlockTree root={{ key: 'root' }}>{() => <div />}</BlockTree>
+    }
+
+    if (isServer) {
+      renderToString(App)
+    } else {
+      render(App, document.body)
+    }
   })
 })

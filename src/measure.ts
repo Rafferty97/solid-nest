@@ -27,8 +27,8 @@ export function measureBlocks<K>(root: K, blocks: Map<K, HTMLElement>): Map<K, B
 
 export function measureBlock(block: HTMLElement): BlockMeasurements {
   const outer = block.getBoundingClientRect()
-  const inner = block.querySelector(`& > .${blockInnerClass}`)?.getBoundingClientRect()
-  let children = block.querySelector(`.${childrenWrapperClass}`)?.getBoundingClientRect()
+  const inner = block.querySelector(`:scope > .${blockInnerClass}`)?.getBoundingClientRect()
+  let children = block.querySelector(`:scope .${childrenWrapperClass}`)?.getBoundingClientRect()
 
   const childrenVisible = !!children && children.top < outer.bottom && children.bottom > outer.top
   children ??= outer
@@ -55,5 +55,5 @@ export function measureInnerBlocks<K>(blocks: Map<K, HTMLElement>): Map<K, DOMRe
 }
 
 export function measureInner(block: HTMLElement): DOMRect | undefined {
-  return block.querySelector(`& > .${blockInnerClass}`)?.getBoundingClientRect()
+  return block.querySelector(`:scope > .${blockInnerClass}`)?.getBoundingClientRect()
 }
