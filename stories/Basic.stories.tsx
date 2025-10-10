@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from 'storybook-solidjs-vite'
-import { BlockTree, createBlockTree, Root } from '../src'
+import { Block, BlockTree, createBlockTree, Root } from '../src'
 import { BasicBlock, BasicBlockWithChildren, BasicBlockWithCollapse, Placeholder } from './components'
 import './main.css'
 
@@ -11,8 +11,9 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const basicList: Root<string, { key: string; data: string }> = {
+const basicList: Block<string, string> = {
   key: 'root',
+  data: '',
   children: [
     { key: '1', data: 'Drag me' },
     { key: '2', data: 'Or drag me' },
@@ -60,7 +61,7 @@ export const BasicUsage: Story = {
 
     return (
       <div style={{ 'max-width': '60ch' }}>
-        <BlockTree root={basicList} getKey={b => b.key} children={BasicBlock} />
+        <BlockTree {...props} children={BasicBlock} />
       </div>
     )
   },

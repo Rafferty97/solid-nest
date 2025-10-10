@@ -1,5 +1,5 @@
 import { Show } from 'solid-js'
-import { BlockProps } from 'src'
+import { Block, BlockProps } from 'src'
 
 export const Placeholder = () => {
   return (
@@ -17,7 +17,7 @@ export const Placeholder = () => {
   )
 }
 
-export const BasicBlock = (props: BlockProps<string, { key: string; data: string }>) => {
+export const BasicBlock = (props: BlockProps<string, Block<string, string>>) => {
   return (
     <div
       style={{
