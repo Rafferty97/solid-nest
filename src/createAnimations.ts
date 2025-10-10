@@ -7,10 +7,7 @@ import { VirtualTree } from './virtual-tree'
 export function createAnimations<K, T>(
   input: Accessor<VirtualTree<K, T>>,
   itemElements: Map<ItemId, HTMLElement>,
-  options: Accessor<{
-    defaultSpacing: number
-    transitionDuration: number
-  }>,
+  options: Accessor<{ transitionDuration: number }>,
 ) {
   const [tree, setTree] = createSignal(input())
   const [styles, setStyles] = createSignal(new Map<ItemId, AnimationState>())
@@ -33,7 +30,7 @@ export function createAnimations<K, T>(
     const nextRects = measureBlocks(RootItemId, itemElements)
 
     // I. Apply inverse styles
-    const { invert, play } = calculateTransitionStyles(prev, next, initRects, prevRects, nextRects, options())
+    const { invert, play } = calculateTransitionStyles(prev, next, initRects, prevRects, nextRects)
     setStyles(invert)
 
     // P. Play animation

@@ -1,6 +1,6 @@
 import { createSignal } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
-import { Block, Place, RootBlock, Selection, SelectionEvent } from 'src'
+import { Place, Selection, SelectionEvent } from 'src'
 import { InsertEvent, ReorderEvent, RemoveEvent } from 'src'
 
 /**

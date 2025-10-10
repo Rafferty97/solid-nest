@@ -15,15 +15,14 @@ export interface AnimationState {
 }
 
 export function calculateTransitionStyles<K>(
-  prevTree: VirtualTree<K, unknown>,
-  nextTree: VirtualTree<K, unknown>,
+  prevTree: VirtualTree<K, any>,
+  nextTree: VirtualTree<K, any>,
   initMeasures: Map<ItemId, DOMRect | undefined>,
   prevMeasures: Map<ItemId, BlockMeasurements>,
   nextMeasures: Map<ItemId, BlockMeasurements>,
-  options: { defaultSpacing: number },
 ) {
-  const prevRects = calculateLayout(prevTree, id => prevMeasures.get(id) ?? nextMeasures.get(id), options)
-  const nextRects = calculateLayout(nextTree, id => nextMeasures.get(id) ?? prevMeasures.get(id), options)
+  const prevRects = calculateLayout(prevTree, id => prevMeasures.get(id) ?? nextMeasures.get(id))
+  const nextRects = calculateLayout(nextTree, id => nextMeasures.get(id) ?? prevMeasures.get(id))
 
   // Special treatment for gaps
   const [prevGap, nextGap] = [prevRects.get(DropzoneItemId), nextRects.get(DropzoneItemId)]

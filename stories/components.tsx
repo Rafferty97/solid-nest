@@ -17,20 +17,20 @@ export const Placeholder = () => {
   )
 }
 
-export const BasicBlock = (block: BlockProps<string, string>) => {
+export const BasicBlock = (props: BlockProps<string, { key: string; data: string }>) => {
   return (
     <div
       style={{
         border: '2px solid #ddd',
         padding: '1rem',
         'border-radius': '4px',
-        background: block.selected ? '#e3f2fd' : 'white',
+        background: props.selected ? '#e3f2fd' : 'white',
         cursor: 'grab',
         'touch-action': 'none',
       }}
       data-drag-handle
     >
-      {block.data}
+      {props.block.data}
     </div>
   )
 }
@@ -48,7 +48,7 @@ export const BasicBlockWithChildren = (block: BlockProps<string, string>) => {
       }}
       data-drag-handle
     >
-      {block.data}
+      {block.block}
       <div style={{ margin: '0.75rem 0 0 0' }}>{block.children}</div>
     </div>
   )
@@ -79,13 +79,13 @@ export const BasicBlockWithCollapse = (props: {
             'margin-inline-end': '0.5ch',
           }}
           onPointerDown={ev => ev.stopPropagation()}
-          onClick={() => props.setOpen(!props.block.data.open)}
+          onClick={() => props.setOpen(!props.block.block.open)}
         >
           <svg
             style={{
               display: 'block',
               width: '1rem',
-              transform: props.block.data.open ? 'rotate(90deg)' : '',
+              transform: props.block.block.open ? 'rotate(90deg)' : '',
             }}
             fill="none"
             stroke="currentColor"
@@ -94,9 +94,9 @@ export const BasicBlockWithCollapse = (props: {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
           </svg>
         </div>
-        <div>{props.block.data.text}</div>
+        <div>{props.block.block.text}</div>
       </div>
-      <Show when={props.block.data.open}>
+      <Show when={props.block.block.open}>
         <div style={{ margin: '0.75rem 0 0 0' }}>{props.block.children}</div>
       </Show>
     </div>

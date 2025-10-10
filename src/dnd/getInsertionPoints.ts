@@ -10,11 +10,10 @@ export function getInsertionPoints<K, T>(
   tree: VirtualTree<K, T>,
   tags: string[],
   measures: Map<ItemId, BlockMeasurements>,
-  options: { defaultSpacing: number },
 ): InsertionPoint<K>[] {
   const output: InsertionPoint<K>[] = []
 
-  const layout = calculateLayout(tree, id => measures.get(id), { ...options, skipHidden: true })
+  const layout = calculateLayout(tree, id => measures.get(id), { skipHidden: true })
 
   const inner = (item: Item<K, T>, parent: K, accepts: boolean) => {
     const { id } = item
@@ -35,7 +34,7 @@ export function getInsertionPoints<K, T>(
 
     // Iterate children
     if (item.kind === 'block') {
-      const accepts = !tags.find(tag => !item.accepts?.includes(tag))
+      const accepts = true // !tags.find(tag => !item.accepts?.includes(tag)) FIXME
       for (const child of tree.children(item.id)) {
         inner(child, item.key, accepts)
       }
@@ -43,7 +42,7 @@ export function getInsertionPoints<K, T>(
   }
 
   const root = tree.root
-  const accepts = !tags.find(tag => !root.accepts?.includes(tag))
+  const accepts = true // !tags.find(tag => !root.accepts?.includes(tag)) FIXME
   for (const child of tree.children(root.id)) {
     inner(child, root.key, accepts)
   }

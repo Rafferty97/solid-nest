@@ -4,7 +4,6 @@ import { Vec2 } from '../util/types'
 import { measureBlock, measureBlocks } from 'src/measure'
 import { getInsertionPoints } from './getInsertionPoints'
 import { EventHandler, ReorderEvent } from 'src/events'
-import { Block, containsChild } from 'src/Block'
 import { VirtualTree } from 'src/virtual-tree'
 
 export type DragState<K> = {
@@ -22,9 +21,9 @@ type ClickedBlock<K> = {
 
 export function createDnd<K, T>(
   input: Accessor<VirtualTree<K, T>>,
-  options: Accessor<{ defaultSpacing: number; dragRadius: Vec2; dragThreshold: number }>,
+  options: Accessor<{ dragRadius: Vec2; dragThreshold: number }>,
   itemElements: Map<ItemId, HTMLElement>,
-  getBlocksToDrag: (key: K) => Block<K, T>[],
+  getBlocksToDrag: (key: K) => T[],
   onReorder: EventHandler<ReorderEvent<K>>,
 ) {
   // Create drag state
@@ -37,6 +36,8 @@ export function createDnd<K, T>(
     if (!state) return
 
     const onmove = (ev: MouseEvent) => {
+      const tree = input()
+
       // Update pointer position
       setPointerPos({ x: ev.clientX, y: ev.clientY })
 
@@ -51,20 +52,21 @@ export function createDnd<K, T>(
       const { key, pos } = state
 
       const blocks = getBlocksToDrag(key)
-      const topKey = blocks.find(block => containsChild(block, key))?.key
-      if (!topKey) return
+      const topBlock = blocks.find(block => tree.containsChildBlock(tree.key(block), key))
+      if (!topBlock) return
 
-      const topItem = createBlockItemId(topKey)
+      const topItem = createBlockItemId(tree.key(topBlock))
       const topElem = itemElements.get(topItem)
       if (!topElem) return
 
       const topRect = measureBlock(topElem).outer
 
-      const keys = blocks.map(block => block.key)
+      const keys = blocks.map(tree.key)
       const offset = { x: topRect.x - pos.x, y: topRect.y - pos.y }
       const size = { x: topRect.width, y: topRect.height }
       const tags = new Set<string>()
-      for (const { tag } of blocks) {
+      for (const block of blocks) {
+        const { tag } = tree.options(block)
         if (tag) tags.add(tag)
       }
 
@@ -112,7 +114,7 @@ export function createDnd<K, T>(
 
     const rects = measureBlocks(RootItemId, itemElements)
 
-    return getInsertionPoints(treeWithoutDragged(), state.tags, rects, options())
+    return getInsertionPoints(treeWithoutDragged(), state.tags, rects)
   })
 
   // Calculate where the dragged item(s) should be inserted

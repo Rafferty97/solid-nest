@@ -8,15 +8,15 @@ const ZeroMeasurement = {
 }
 
 export function calculateLayout<K>(
-  tree: VirtualTree<K, unknown>,
+  tree: VirtualTree<K, any>,
   measureItem: (id: ItemId) => BlockMeasurements | undefined,
-  opts: { skipHidden?: boolean; defaultSpacing: number },
+  opts: { skipHidden?: boolean } = {},
 ) {
   const output = new Map<ItemId, DOMRect>()
 
   let nextY = 0
 
-  const inner = (item: Item<K, unknown>, x: number, width: number, spacing: number, isFirst: boolean) => {
+  const inner = (item: Item<K, any>, x: number, width: number, spacing: number, isFirst: boolean) => {
     const { margin, childrenVisible } = measureItem(item.id) ?? ZeroMeasurement
 
     if (!isFirst && item.kind !== 'placeholder') {
@@ -34,7 +34,7 @@ export function calculateLayout<K>(
 
       const innerX = x + margin.left
       const innerWidth = width - (margin.left + margin.right)
-      const innerSpacing = item.spacing ?? opts.defaultSpacing
+      const innerSpacing = 10 // item.spacing ?? opts.defaultSpacing FIXME
 
       let isFirst = true
       for (const child of children) {

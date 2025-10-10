@@ -1,6 +1,5 @@
 import { Accessor, Component, createMemo, For, JSX, onCleanup, onMount, Show } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
-import { Block, BlockOptions, RootBlock } from './Block'
 import { Item, ItemId, RootItemId } from './Item'
 import {
   CopyEvent,
@@ -34,7 +33,10 @@ import { Placeholder } from './components/Placeholder'
 
 export type BlockTreeProps<K, T> = {
   /** The root block. */
-  root: RootBlock<K, T>
+  root: Root<K, T>
+  getKey: (block: T) => K
+  getChildren?: (block: T) => T[] | null | undefined
+  getOptions?: (block: T) => BlockOptions | null | undefined
   /**
    * The current selection, which can be either:
    * - A set of blocks, in the order they were selected
@@ -62,8 +64,6 @@ export type BlockTreeProps<K, T> = {
   placeholder?: Component<{ parent: K }>
   /** Optional custom drag container component. */
   dragContainer?: Component<DragContainerProps<K, T>>
-  /** Default spacing between sibling blocks, in pixels. */
-  defaultSpacing?: number
   /** Duration of transition animations, in milliseconds. */
   transitionDuration?: number
   /** Distance the cursor must move, in pixels, for a drag to be detected. */
@@ -79,11 +79,26 @@ export type BlockTreeProps<K, T> = {
   children: Component<BlockProps<K, T>>
 }
 
+export type Root<K, T> = { key: K; children: T[]; options?: BlockOptions }
+
+/** Configures how a block is rendered and interacts with other blocks. */
+export type BlockOptions = {
+  /** The spacing between child blocks, in pixels. */
+  spacing?: number
+  /**
+   * The block's tag, used to determine which parent blocks it can be dragged into.
+   * Blocks without a tag can be accepted by any parent.
+   * */
+  tag?: string
+  /** The set of tags that this block accepts as children. */
+  accepts?: string[]
+}
+
 export type Selection<K> = { blocks?: K[]; place?: Place<K> }
 
 export type BlockProps<K, T> = {
   key: K
-  data: T
+  block: T
   selected: boolean
   dragging: boolean
   children: JSX.Element
@@ -97,19 +112,18 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
 
   const options = createMemo(() => ({
     transitionDuration: props.transitionDuration ?? 200,
-    defaultSpacing: props.defaultSpacing ?? 12,
     dragRadius: { x: 1.2, y: 1.5 },
     multiselect: props.multiselect ?? true,
     dragThreshold: props.dragThreshold ?? 10,
   }))
 
   const blockMap = createMemo(() => {
-    const output = new Map<K, Block<K, T>>()
-    const insert = (node: Block<K, T>) => {
-      output.set(node.key, node)
-      node.children?.forEach(insert)
+    const output = new Map<K, T>()
+    const insert = (block: T) => {
+      output.set(props.getKey(block), block)
+      props.getChildren?.(block)?.forEach(insert)
     }
-    props.root.children?.forEach(insert)
+    props.root.children.forEach(insert)
     return output
   })
 
@@ -122,10 +136,11 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     }
     if (selection?.blocks) {
       const keys = new Set(selection.blocks)
-      const process = (parent: K, blocks: Block<K, T>[]): Place<K> | undefined => {
+      const process = (parent: K, blocks: T[]): Place<K> | undefined => {
         let before: K | null = null
         for (let i = blocks.length - 1; i >= 0; i--) {
-          const { key, children } = blocks[i]!
+          const key = props.getKey(blocks[i]!)
+          const children = props.getChildren?.(blocks[i]!)
           if (keys.has(key)) {
             return { parent, before }
           }
@@ -137,11 +152,16 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
         }
         return undefined
       }
-      return process(props.root.key, props.root.children ?? [])
+      return process(props.root.key, props.root.children)
     }
   })
 
-  const inputTree = VirtualTree.create(() => props.root)
+  const inputTree = VirtualTree.create(
+    () => props.root,
+    block => props.getKey(block),
+    block => props.getChildren?.(block) ?? [],
+    block => props.getOptions?.(block) ?? {},
+  )
 
   const blocksToDrag = (key: K) => {
     const selection_ = selectedBlocks()
@@ -228,6 +248,8 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     onCleanup(() => document.removeEventListener('pointerdown', ondown, { capture: true }))
   })
 
+  const getSpacing = (block: T) => props.getOptions?.(block)?.spacing
+
   const renderItem = (
     item: Item<K, T>,
     tree: Accessor<VirtualTree<K, T>>,
@@ -285,13 +307,13 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
             class={blockInnerClass}
             style={{
               ...innerStyle(styles?.().get(item.id)),
-              [spacingVar]: `${item.spacing ?? options().defaultSpacing}px`,
+              [spacingVar]: `${getSpacing(item.block)}px`,
             }}
           >
             <Dynamic
               component={props.children}
               key={item.key}
-              data={item.data}
+              block={item.block}
               selected={selectedBlocks().includes(item.key)}
               dragging={itemProps.dragging === true}
             >
@@ -354,7 +376,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
         class={blockInnerClass}
         style={{
           ...innerStyle(styles().get(RootItemId)),
-          [spacingVar]: `${props.root.spacing ?? options().defaultSpacing}px`,
+          [spacingVar]: `${props.root.options?.spacing ?? 10}px`, // FIXME
           position: 'static',
         }}
       >
@@ -388,5 +410,3 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     </div>
   )
 }
-
-export type { Block, BlockOptions }

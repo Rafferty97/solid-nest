@@ -35,7 +35,7 @@ export function calculateSelectionMode(ev: MouseEvent, multiselect: boolean) {
   return SelectionMode.Set
 }
 
-export function updateSelection<K>(tree: VirtualTree<K, unknown>, prev: K[], key: K, mode: SelectionMode) {
+export function updateSelection<K>(tree: VirtualTree<K, any>, prev: K[], key: K, mode: SelectionMode) {
   if (mode === SelectionMode.Set) {
     const onClick = prev.includes(key)
     return { mode, keys: [key], onClick }
@@ -88,7 +88,7 @@ export function updateSelection<K>(tree: VirtualTree<K, unknown>, prev: K[], key
   return { mode, keys: [] }
 }
 
-export function normaliseSelection<K>(tree: VirtualTree<K, unknown>, keys: K[]): K[] {
+export function normaliseSelection<K>(tree: VirtualTree<K, any>, keys: K[]): K[] {
   const childKeys = new Set<K>()
 
   const process = (item: Item<K, unknown>, insert = false) => {
