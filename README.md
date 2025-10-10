@@ -13,6 +13,8 @@ A powerful SolidJS library for building hierarchical block-based UIs with drag-a
 
 Care has been taken to ensure everything "just works" with minimal configuration or intervention.
 
+__Demo:__ https://alexanderrafferty.com/projects/solid-nest/
+
 ## Features
 
 - **Tiny bundle size** - Only ~6kB minified + gzipped!
@@ -31,12 +33,6 @@ _*Some minor styling is provided for convenience, but it's easy to override_
 
 Some features I plan to add in the future include:
 - Rectangular selection
-
-## Demo
-
-A quick and dirty demo can be found here: https://alexanderrafferty.com/projects/solid-nest/
-
-I plan to make a better suite of demos soon.
 
 ## Installation
 
