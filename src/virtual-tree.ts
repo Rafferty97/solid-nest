@@ -95,7 +95,7 @@ export class VirtualTree<K, T> {
   }
 
   containsChildBlock(block: K, child: K): boolean {
-    return this.containsChild(createBlockItemId(block), createBlockItemId(child))
+    return this.containsChild(createBlockItemId(block, this.root.key), createBlockItemId(child, this.root.key))
   }
 
   containsChild(item: ItemId, other: ItemId): boolean {
@@ -103,8 +103,7 @@ export class VirtualTree<K, T> {
       return true
     }
 
-    const id = createBlockItemId(item)
-    const children = this._childMap.get(id)
+    const children = this._childMap.get(item)
     if (!children) return false
 
     for (const child of children) {

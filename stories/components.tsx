@@ -94,7 +94,9 @@ export const BasicBlockWithCollapse = (
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
           </svg>
         </div>
-        <div>{props.block.text}</div>
+        <div>
+          {props.block.text} ({props.key})
+        </div>
       </div>
       <Show when={props.block.open}>
         <div style={{ margin: '0.75rem 0 0 0' }}>{props.children}</div>

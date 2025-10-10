@@ -1,8 +1,7 @@
 import type { Meta, StoryObj } from 'storybook-solidjs-vite'
 import { BlockTree, createBlockTree } from '../src'
-import { BasicBlock, BasicBlockWithChildren, BasicBlockWithCollapse } from './components'
+import { BasicBlock, BasicBlockWithChildren, BasicBlockWithCollapse, Placeholder } from './components'
 import { MyBlock, CollapsableBlock } from './types'
-import { Placeholder } from 'src/components/Placeholder'
 import './main.css'
 
 const meta = {
