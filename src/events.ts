@@ -1,4 +1,3 @@
-import { Block } from './Block'
 import { SelectionMode } from './selection'
 
 export type EventHandler<E> = (event: E) => void
@@ -31,7 +30,7 @@ export type SelectionEvent<K> =
 
 export type InsertEvent<K, T> = {
   /** The blocks being inserted. */
-  blocks: Block<K, T>[]
+  blocks: T[]
   /** The place where the blocks will be inserted. */
   place: Place<K>
 }
@@ -58,16 +57,16 @@ export type RemoveEvent<K> = {
   keys: K[]
 }
 
-export type CopyEvent<K, T> = {
+export type CopyEvent<T> = {
   /** The blocks that are being copied. */
-  blocks: Block<K, T>[]
+  blocks: T[]
   /** The clipboard data transfer object. */
   data: DataTransfer
 }
 
-export type CutEvent<K, T> = {
+export type CutEvent<T> = {
   /** The blocks that are being cut. */
-  blocks: Block<K, T>[]
+  blocks: T[]
   /** The clipboard data transfer object. */
   data: DataTransfer
 }

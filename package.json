@@ -52,7 +52,7 @@
     "lint:types": "tsc --noEmit",
     "update-deps": "pnpm up -Li",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build:storybook": "storybook build"
   },
   "peerDependencies": {
     "solid-js": "^1.6.0"

@@ -32,18 +32,20 @@ import { DragContainer, DragContainerProps } from './components/DragContainer'
 import { Placeholder } from './components/Placeholder'
 import { DEFAULT_SPACING } from './constants'
 
-export type BlockTreeProps<K, T> = {
+export type BlockTreeProps<K, T, R = T> = {
   /** The root block. */
-  root: T
-  getKey: (block: T) => K
-  getChildren?: (block: T) => T[] | null | undefined
-  getOptions?: (block: T) => BlockOptions | null | undefined
+  root: R
+  /** Gets the key of a block. */
+  getKey: (block: T | R) => K
+  /** Gets the child blocks of a block. */
+  getChildren?: (block: T | R) => T[] | null | undefined
+  /** Gets the configuration options for a block. */
+  getOptions?: (block: T | R) => BlockOptions | null | undefined
   /**
    * The current selection, which can be either:
    * - A set of blocks, in the order they were selected
    * - An insertion point between blocks
    */
-  /** The set of blocks that are currently selected, in the order they were selected. */
   selection?: Selection<K>
   /** Fired when a block is selected or deselected. */
   onSelectionChange?: (event: SelectionEvent<K>) => void
@@ -54,9 +56,9 @@ export type BlockTreeProps<K, T> = {
   /** Fired when blocks are removed. */
   onRemove?: EventHandler<RemoveEvent<K>>
   /** Fired when blocks are copied. */
-  onCopy?: EventHandler<CopyEvent<K, T>>
+  onCopy?: EventHandler<CopyEvent<T>>
   /** Fired when blocks are cut. */
-  onCut?: EventHandler<CutEvent<K, T>>
+  onCut?: EventHandler<CutEvent<T>>
   /** Fired when blocks are pasted. */
   onPaste?: EventHandler<PasteEvent<K>>
   /** Optional custom dropzone component. */
@@ -64,7 +66,7 @@ export type BlockTreeProps<K, T> = {
   /** Optional custom placeholder component. */
   placeholder?: Component<{ parent: K }>
   /** Optional custom drag container component. */
-  dragContainer?: Component<DragContainerProps<K, T>>
+  dragContainer?: Component<DragContainerProps<T>>
   /** Duration of transition animations, in milliseconds. */
   transitionDuration?: number
   /** Distance the cursor must move, in pixels, for a drag to be detected. */

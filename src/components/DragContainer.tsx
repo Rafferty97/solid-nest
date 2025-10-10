@@ -1,12 +1,11 @@
 import { JSX, Index } from 'solid-js'
-import { Block } from 'src/Block'
 
-export type DragContainerProps<K, T> = {
-  blocks: Block<K, T>[]
+export type DragContainerProps<T> = {
+  blocks: T[]
   children: JSX.Element
 }
 
-export function DragContainer(props: DragContainerProps<unknown, unknown>) {
+export function DragContainer(props: DragContainerProps<unknown>) {
   return (
     <div style={{ position: 'absolute', left: '0', right: '0', top: '0', bottom: '0' }}>
       <Index each={props.blocks.slice(0, 3)}>
