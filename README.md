@@ -49,9 +49,15 @@ pnpm add solid-nest
 ```tsx
 import { BlockTree, RootBlock, createBlockTree } from 'solid-nest'
 
+type MyBlock = {
+  key: string
+  data?: string
+  children?: MyBlock[]
+}
+
 function App() {
   // Define your block structure
-  const root: RootBlock<string, string> = {
+  const root: MyBlock = {
     key: 'root',
     children: [
       { key: 'a', data: 'First block' },
@@ -93,7 +99,7 @@ The `BlockTree` is the primary component exposed by this library, and is used as
 
 ```tsx
 <BlockTree
-  // The only required prop - the root block of the tree
+  // The root block of the tree
   root={root}
   // The currently selected blocks
   selection={{ blocks: ['key1', 'key2'] }}
