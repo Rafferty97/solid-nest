@@ -45,7 +45,9 @@ export function createAnimations<K, T>(
   let prevTree = tree()
   createEffect(() => {
     const nextTree = input()
-    setAnimationState({ step: 0, fn: animate(prevTree, nextTree) })
+    if (itemElements.has(RootItemId)) {
+      setAnimationState({ step: 0, fn: animate(prevTree, nextTree) })
+    }
     prevTree = nextTree
   })
 
