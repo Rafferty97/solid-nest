@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from 'storybook-solidjs-vite'
-import { BlockTree, createBlockTree, RootBlock } from '../src'
-import { BasicBlock, BasicBlockWithChildren, BasicBlockWithCollapse, Placeholder } from './components'
+import { BlockTree, createBlockTree } from '../src'
+import { BasicBlock, BasicBlockWithChildren } from './components'
+import { MyBlock } from './types'
 import './main.css'
 
 const meta = {
@@ -11,46 +12,13 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const basicList: RootBlock<string, string> = {
+const basicList: MyBlock = {
   key: 'root',
+  data: '',
   children: [
     { key: '1', data: 'Drag me' },
     { key: '2', data: 'Or drag me' },
     { key: '3', data: 'Reorder us!' },
-  ],
-}
-
-const nestedList: RootBlock<string, string> = {
-  key: 'root',
-  children: [
-    {
-      key: '1',
-      data: 'Drag me',
-      children: [
-        { key: '2', data: 'Or drag me' },
-        { key: '3', data: 'Reorder us!' },
-      ],
-    },
-    { key: '4', data: 'Drag me' },
-    { key: '5', data: 'Or drag me' },
-    { key: '6', data: 'Reorder us!' },
-  ],
-}
-
-const nestedListWithCollapse: RootBlock<string, { text: string; open: boolean }> = {
-  key: 'root',
-  children: [
-    {
-      key: '1',
-      data: { text: 'Drag me', open: true },
-      children: [
-        { key: '2', data: { text: 'Or drag me', open: true } },
-        { key: '3', data: { text: 'Reorder us!', open: true } },
-      ],
-    },
-    { key: '4', data: { text: 'Drag me', open: true } },
-    { key: '5', data: { text: 'Or drag me', open: true } },
-    { key: '6', data: { text: 'Reorder us!', open: true } },
   ],
 }
 

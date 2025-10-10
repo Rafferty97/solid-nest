@@ -10,20 +10,19 @@ import {
   createRootItem,
   Item,
   ItemId,
-  RootItem,
   RootItemId,
 } from './Item'
 import { notNull } from './util/notNull'
-import { BlockOptions, Root } from './BlockTree'
+import { BlockOptions } from './BlockTree'
 
 interface VirtualTreeInit<K, T> {
-  readonly root: RootItem<K>
+  readonly root: BlockItem<K, T>
   readonly key: (block: T) => K
   readonly options: (block: T) => BlockOptions
 }
 
 export class VirtualTree<K, T> {
-  readonly root: RootItem<K>
+  readonly root: BlockItem<K, T>
   readonly key: (block: T) => K
   readonly options: (block: T) => BlockOptions
   private readonly _items: Map<ItemId, Item<K, T>>
@@ -38,7 +37,7 @@ export class VirtualTree<K, T> {
   }
 
   static create<K, T>(
-    root: Accessor<Root<K, T>>,
+    getRoot: Accessor<T>,
     getKey: (block: T) => K,
     getChildren: (block: T) => T[],
     getOptions: (block: T) => BlockOptions,
@@ -50,12 +49,13 @@ export class VirtualTree<K, T> {
       const childMap = new Map<ItemId, ItemId[]>()
       const nextCache = new Map<T, BlockItem<K, T>>()
 
-      const process = (item: RootItem<K> | BlockItem<K, T>, children: T[]) => {
+      const process = (item: BlockItem<K, T>, children: T[]) => {
         const childIds: ItemId[] = []
+
+        items.set(item.id, item)
 
         children.forEach(child => {
           const item = cache.get(child) ?? createBlockItem(child, getKey(child))
-          items.set(item.id, item)
           childIds.push(item.id)
           nextCache.set(child, item)
           process(item, getChildren(child))
@@ -68,9 +68,9 @@ export class VirtualTree<K, T> {
         childMap.set(item.id, childIds)
       }
 
-      const rootItem = createRootItem(root().key)
-      items.set(rootItem.id, rootItem)
-      process(rootItem, root().children)
+      const root = getRoot()
+      const rootItem = createRootItem(root, getKey(root))
+      process(rootItem, getChildren(root))
 
       cache = nextCache
 
@@ -194,29 +194,5 @@ export class VirtualTree<K, T> {
   children(id: ItemId): Item<K, T>[] {
     const childIds = this._childMap.get(id)
     return childIds?.map(id => this._items.get(id)).filter(notNull) ?? []
-  }
-
-  private mapItem(id: ItemId): Item<K, T> | undefined {
-    const item = this._items.get(id)
-    if (!item) return undefined
-
-    if (item.kind !== 'root' && item.kind !== 'block') {
-      return item
-    }
-
-    let children: Item<K, T>[] | undefined
-    const getChildren = () =>
-      this._childMap
-        .get(item.id)
-        ?.map(id => this.mapItem(id))
-        .filter(notNull) ?? []
-
-    return {
-      ...item,
-      get children() {
-        children ??= getChildren()
-        return children
-      },
-    }
   }
 }

@@ -1,13 +1,9 @@
 import { createSignal } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
-import { Place, Root, Selection, SelectionEvent } from 'src'
-import { InsertEvent, ReorderEvent, RemoveEvent } from 'src'
+import { Place, Selection } from 'src'
+import { SelectionEvent, InsertEvent, ReorderEvent, RemoveEvent } from 'src'
 
-export type Block<K, T> = {
-  key: K
-  data: T
-  children?: Block<K, T>[]
-}
+type Block<T> = { key: unknown; children?: T[] }
 
 /**
  * Creates a Solid.JS store to back the state of a `BlockTree`, including the current selection,
@@ -26,31 +22,27 @@ export type Block<K, T> = {
  * This is a convenience utility for getting started quickly. A real application would probably prefer
  * to implement its own state management.
  */
-export function createBlockTree<K, T>(init: Block<K, T>) {
+export function createBlockTree<T extends Block<T>>(init: T) {
+  type K = T['key']
+
   const [root, setRoot] = createStore(init)
   const [selection, setSelection] = createSignal<Selection<K>>({})
 
   return {
-    get root() {
-      return {
-        key: root.key,
-        children: root.children ?? [],
-      }
-    },
+    root,
     setRoot,
-
-    getKey(block: Block<K, T>) {
-      return block.key
-    },
-
-    getChildren(block: Block<K, T>) {
-      return block.children
-    },
-
     get selection() {
       return selection()
     },
     setSelection,
+
+    getKey(block: T): T['key'] {
+      return block.key
+    },
+
+    getChildren(block: T) {
+      return block.children
+    },
 
     onSelectionChange(event: SelectionEvent<K>) {
       setSelection(event)
@@ -61,8 +53,8 @@ export function createBlockTree<K, T>(init: Block<K, T>) {
     },
 
     onReorder(event: ReorderEvent<K>) {
-      const moveBlocks = (root: Block<K, T>) => {
-        const blocks: Block<K, T>[] = []
+      const moveBlocks = (root: T) => {
+        const blocks: T[] = []
         removeBlocks(root, event.keys, blocks)
         insertBlocks(root, blocks, event.place)
       }
@@ -94,13 +86,12 @@ export function createBlockTree<K, T>(init: Block<K, T>) {
       this.toggleBlockSelected(key, false)
     },
 
-    updateBlock(key: K, data: T) {
+    updateBlock(key: K, updates: Partial<T>) {
       setRoot(
         produce(root => {
           const block = findBlock(root, key)
-          if (block && 'data' in block) {
-            block.data = data
-          }
+          if (!block) return
+          Object.assign(block, updates)
         }),
       )
     },
@@ -108,7 +99,7 @@ export function createBlockTree<K, T>(init: Block<K, T>) {
 }
 
 /** Utility function to find a block in a tree with a given `key`. */
-function findBlock<K, T>(root: Block<K, T>, key: K): Block<K, T> | undefined {
+function findBlock<T extends Block<T>>(root: T, key: T['key']): T | undefined {
   if (root.key === key) {
     return root
   }
@@ -123,7 +114,7 @@ function findBlock<K, T>(root: Block<K, T>, key: K): Block<K, T> | undefined {
 /**
  * Removes blocks with the given set of `keys`,
  * optionally accumulating them into the `collect` array. */
-function removeBlocks<K, T>(root: Block<K, T>, keys: K[], collect?: Block<K, T>[]) {
+function removeBlocks<T extends Block<T>>(root: T, keys: T['key'][], collect?: T[]) {
   root.children = root.children?.filter(child => {
     if (!keys.includes(child.key)) {
       removeBlocks(child, keys, collect)
@@ -135,7 +126,7 @@ function removeBlocks<K, T>(root: Block<K, T>, keys: K[], collect?: Block<K, T>[
 }
 
 /** Inserts `blocks` into the tree at the specified `place`. */
-function insertBlocks<K, T>(root: Block<K, T>, blocks: Block<K, T>[], place: Place<K>) {
+function insertBlocks<T extends Block<T>>(root: T, blocks: T[], place: Place<T['key']>) {
   const parent = findBlock(root, place.parent)
   if (!parent) return
 

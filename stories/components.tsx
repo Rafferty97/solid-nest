@@ -1,5 +1,6 @@
 import { Show } from 'solid-js'
-import { Block, BlockProps } from 'src'
+import { BlockProps } from 'src'
+import { CollapsableBlock, MyBlock } from './types'
 
 export const Placeholder = () => {
   return (
@@ -17,7 +18,7 @@ export const Placeholder = () => {
   )
 }
 
-export const BasicBlock = (props: BlockProps<string, Block<string, string>>) => {
+export const BasicBlock = (props: BlockProps<string, MyBlock>) => {
   return (
     <div
       style={{
@@ -35,36 +36,35 @@ export const BasicBlock = (props: BlockProps<string, Block<string, string>>) => 
   )
 }
 
-export const BasicBlockWithChildren = (block: BlockProps<string, string>) => {
+export const BasicBlockWithChildren = (props: BlockProps<string, MyBlock>) => {
   return (
     <div
       style={{
         border: '2px solid #ddd',
         padding: '0.75rem',
         'border-radius': '4px',
-        background: block.selected ? '#e3f2fd' : 'white',
+        background: props.selected ? '#e3f2fd' : 'white',
         cursor: 'grab',
         'touch-action': 'none',
       }}
       data-drag-handle
     >
-      {block.block}
-      <div style={{ margin: '0.75rem 0 0 0' }}>{block.children}</div>
+      {props.block.data}
+      <div style={{ margin: '0.75rem 0 0 0' }}>{props.children}</div>
     </div>
   )
 }
 
-export const BasicBlockWithCollapse = (props: {
-  block: BlockProps<string, { text: string; open: boolean }>
-  setOpen: (open: boolean) => void
-}) => {
+export const BasicBlockWithCollapse = (
+  props: BlockProps<string, CollapsableBlock> & { setOpen: (open: boolean) => void },
+) => {
   return (
     <div
       style={{
         border: '2px solid #ddd',
         padding: '0.75rem',
         'border-radius': '4px',
-        background: props.block.selected ? '#e3f2fd' : 'white',
+        background: props.selected ? '#e3f2fd' : 'white',
         cursor: 'grab',
         'touch-action': 'none',
       }}
@@ -79,13 +79,13 @@ export const BasicBlockWithCollapse = (props: {
             'margin-inline-end': '0.5ch',
           }}
           onPointerDown={ev => ev.stopPropagation()}
-          onClick={() => props.setOpen(!props.block.block.open)}
+          onClick={() => props.setOpen(!props.block.open)}
         >
           <svg
             style={{
               display: 'block',
               width: '1rem',
-              transform: props.block.block.open ? 'rotate(90deg)' : '',
+              transform: props.block.open ? 'rotate(90deg)' : '',
             }}
             fill="none"
             stroke="currentColor"
@@ -94,10 +94,10 @@ export const BasicBlockWithCollapse = (props: {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
           </svg>
         </div>
-        <div>{props.block.block.text}</div>
+        <div>{props.block.text}</div>
       </div>
-      <Show when={props.block.block.open}>
-        <div style={{ margin: '0.75rem 0 0 0' }}>{props.block.children}</div>
+      <Show when={props.block.open}>
+        <div style={{ margin: '0.75rem 0 0 0' }}>{props.children}</div>
       </Show>
     </div>
   )

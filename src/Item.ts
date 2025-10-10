@@ -1,10 +1,9 @@
 export type ItemId = string & { readonly brand: unique symbol }
 
-export type Item<K, T = unknown> = RootItem<K> | BlockItem<K, T> | PlaceholderItem<K> | GapItem
+export type Item<K, T = unknown> = BlockItem<K, T> | PlaceholderItem<K> | GapItem
 
 export type ItemKind = Item<any, any>['kind']
 
-export type RootItem<K> = Readonly<{ id: ItemId; kind: 'root'; key: K }>
 export type BlockItem<K, T> = Readonly<{ id: ItemId; kind: 'block'; key: K; block: T }>
 export type PlaceholderItem<K> = Readonly<{ id: ItemId; kind: 'placeholder'; parent: K }>
 export type GapItem = Readonly<{ id: ItemId; kind: 'gap'; before: ItemId; height: number }>
@@ -12,11 +11,12 @@ export type GapItem = Readonly<{ id: ItemId; kind: 'gap'; before: ItemId; height
 export const RootItemId = 'root' as ItemId
 export const DropzoneItemId = 'gap' as ItemId
 
-export function createRootItem<K>(key: K): RootItem<K> {
+export function createRootItem<K, T>(block: T, key: K): BlockItem<K, T> {
   return {
     id: RootItemId,
-    kind: 'root',
+    kind: 'block',
     key,
+    block,
   }
 }
 

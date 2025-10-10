@@ -30,10 +30,11 @@ import { blockClass, blockInnerClass, childrenWrapperClass, injectCSS, spacerCla
 import { VirtualTree } from './virtual-tree'
 import { DragContainer, DragContainerProps } from './components/DragContainer'
 import { Placeholder } from './components/Placeholder'
+import { DEFAULT_SPACING } from './constants'
 
 export type BlockTreeProps<K, T> = {
   /** The root block. */
-  root: Root<K, T>
+  root: T
   getKey: (block: T) => K
   getChildren?: (block: T) => T[] | null | undefined
   getOptions?: (block: T) => BlockOptions | null | undefined
@@ -79,8 +80,6 @@ export type BlockTreeProps<K, T> = {
   children: Component<BlockProps<K, T>>
 }
 
-export type Root<K, T> = { key: K; children: T[]; options?: BlockOptions }
-
 /** Configures how a block is rendered and interacts with other blocks. */
 export type BlockOptions = {
   /** The spacing between child blocks, in pixels. */
@@ -123,7 +122,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       output.set(props.getKey(block), block)
       props.getChildren?.(block)?.forEach(insert)
     }
-    props.root.children.forEach(insert)
+    insert(props.root)
     return output
   })
 
@@ -136,23 +135,23 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     }
     if (selection?.blocks) {
       const keys = new Set(selection.blocks)
-      const process = (parent: K, blocks: T[]): Place<K> | undefined => {
+      const process = (block: T): Place<K> | undefined => {
+        const parent = props.getKey(block)
+        const blocks = props.getChildren?.(block) ?? []
+
         let before: K | null = null
         for (let i = blocks.length - 1; i >= 0; i--) {
           const key = props.getKey(blocks[i]!)
-          const children = props.getChildren?.(blocks[i]!)
           if (keys.has(key)) {
             return { parent, before }
           }
-          if (children) {
-            const result = process(key, children)
-            if (result) return result
-          }
+          const result = process(blocks[i]!)
+          if (result) return result
           before = key
         }
         return undefined
       }
-      return process(props.root.key, props.root.children)
+      return process(props.root)
     }
   })
 
@@ -248,7 +247,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     onCleanup(() => document.removeEventListener('pointerdown', ondown, { capture: true }))
   })
 
-  const getSpacing = (block: T) => props.getOptions?.(block)?.spacing
+  const getSpacing = (block: T) => props.getOptions?.(block)?.spacing ?? DEFAULT_SPACING
 
   const renderItem = (
     item: Item<K, T>,
@@ -376,7 +375,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
         class={blockInnerClass}
         style={{
           ...innerStyle(styles().get(RootItemId)),
-          [spacingVar]: `${props.root.options?.spacing ?? 10}px`, // FIXME
+          [spacingVar]: `${getSpacing(props.root)}px`,
           position: 'static',
         }}
       >

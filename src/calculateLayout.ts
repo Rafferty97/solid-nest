@@ -1,3 +1,4 @@
+import { DEFAULT_SPACING } from './constants'
 import { Item, ItemId, RootItemId } from './Item'
 import { BlockMeasurements } from './measure'
 import { VirtualTree } from './virtual-tree'
@@ -29,12 +30,12 @@ export function calculateLayout<K>(
       nextY += margin.top
     }
 
-    if ((item.kind === 'root' || item.kind === 'block') && (childrenVisible || !opts.skipHidden)) {
+    if (item.kind === 'block' && (childrenVisible || !opts.skipHidden)) {
       const children = tree.children(item.id)
 
       const innerX = x + margin.left
       const innerWidth = width - (margin.left + margin.right)
-      const innerSpacing = 10 // item.spacing ?? opts.defaultSpacing FIXME
+      const innerSpacing = tree.options(item.block).spacing ?? DEFAULT_SPACING
 
       let isFirst = true
       for (const child of children) {
