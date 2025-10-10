@@ -41,9 +41,7 @@
   },
   "typesVersions": {},
   "scripts": {
-    "dev": "vite serve dev",
     "build": "tsup",
-    "build:demo": "vite build dev",
     "test": "concurrently pnpm:test:*",
     "test:client": "vitest",
     "test:ssr": "pnpm run test:client --mode ssr",
@@ -52,12 +50,15 @@
     "lint": "concurrently pnpm:lint:*",
     "lint:code": "eslint --ignore-path .gitignore --max-warnings 0 src/**/*.{js,ts,tsx,jsx}",
     "lint:types": "tsc --noEmit",
-    "update-deps": "pnpm up -Li"
+    "update-deps": "pnpm up -Li",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "peerDependencies": {
     "solid-js": "^1.6.0"
   },
   "devDependencies": {
+    "@storybook/addon-docs": "9.1.10",
     "@types/node": "^20.12.12",
     "@typescript-eslint/eslint-plugin": "^7.9.0",
     "@typescript-eslint/parser": "^7.9.0",
@@ -67,18 +68,27 @@
     "eslint": "^8.56.0",
     "eslint-plugin-eslint-comments": "^3.2.0",
     "eslint-plugin-no-only-tests": "^3.1.0",
+    "eslint-plugin-storybook": "9.1.10",
     "jsdom": "^24.0.0",
     "prettier": "3.0.0",
-    "solid-js": "^1.8.17",
+    "solid-icons": "^1.1.0",
+    "solid-js": "^1.9.9",
+    "storybook": "9.1.10",
+    "storybook-solidjs-vite": "9.0.3",
     "tsup": "^8.0.2",
     "tsup-preset-solid": "^2.2.0",
     "typescript": "^5.9.3",
     "vite": "^5.2.11",
     "vite-plugin-solid": "^2.10.2",
-    "vitest": "^1.6.0"
+    "vitest": "^3.2.4"
   },
   "keywords": [
     "solid"
   ],
-  "packageManager": "pnpm@10.18.0"
+  "packageManager": "pnpm@10.18.0",
+  "eslintConfig": {
+    "extends": [
+      "plugin:storybook/recommended"
+    ]
+  }
 }

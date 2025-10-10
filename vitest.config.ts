@@ -25,7 +25,6 @@ export default defineConfig(({ mode }) => {
         PROD: testSSR ? '1' : '',
       },
       environment: testSSR ? 'node' : 'jsdom',
-      transformMode: { web: [/\.[jt]sx$/] },
       ...(testSSR
         ? {
             include: ['test/server.test.{ts,tsx}'],
