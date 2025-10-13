@@ -38,9 +38,7 @@ export type BlockTreeProps<K, T, R = T> = {
   /** Gets the key of a block. */
   getKey: (block: T | R) => K
   /** Gets the child blocks of a block. */
-  getChildren?: (block: T | R, slot: string) => T[] | null | undefined
-  /** Gets the available "children slots" for a black; defaults to `['main']`. */
-  getSlots?: (block: T | R) => string[] | null | undefined
+  getChildren?: (block: T | R) => T[] | null | undefined
   /** Gets the configuration options for a block. */
   getOptions?: (block: T | R) => BlockOptions | null | undefined
   /**
@@ -120,19 +118,13 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
     dragThreshold: props.dragThreshold ?? 10,
   }))
 
-  const DEFAULT_SLOTS = ['main']
-  const getChildren = (block: T | R) => {
-    const slots = props.getSlots?.(block) ?? DEFAULT_SLOTS
-    return slots.flatMap(slot => props.getChildren?.(block, slot) ?? [])
-  }
-
   const blockMap = createMemo(() => {
     const output = new Map<K, T>()
     const insert = (block: T) => {
       output.set(props.getKey(block), block)
-      getChildren(block).forEach(insert)
+      props.getChildren?.(block)?.forEach(insert)
     }
-    getChildren(props.root).forEach(insert)
+    props.getChildren?.(props.root)?.forEach(insert)
     return output
   })
 
@@ -147,7 +139,7 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
       const keys = new Set(selection.blocks)
       const process = (block: T | R): Place<K> | undefined => {
         const parent = props.getKey(block)
-        const blocks = getChildren(block)
+        const blocks = props.getChildren?.(block) ?? []
 
         let before: K | null = null
         for (let i = blocks.length - 1; i >= 0; i--) {
@@ -165,10 +157,10 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
     }
   })
 
-  const inputTree = VirtualTree.create(
+  const inputTree = VirtualTree.create<K, T, R>(
     () => props.root,
     block => props.getKey(block),
-    getChildren,
+    block => props.getChildren?.(block) ?? [],
     block => props.getOptions?.(block) ?? {},
   )
 
