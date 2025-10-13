@@ -27,7 +27,7 @@ export function calculateLayout<K>(
       for (const child of children) {
         m = measure.children[i] ?? { ...m, y: spacing }
         if (child.kind === 'placeholder' && i > 0) {
-          output.set(child.id, new DOMRect(x, nextY + m.y, width, 0))
+          output.set(child.id, new DOMRect(x, nextY + m.y, width + m.w, 0))
         } else {
           nextY += m.y
           inner(child, x + m.x, width + m.w)

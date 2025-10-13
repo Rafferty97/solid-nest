@@ -1,7 +1,6 @@
 const PREFIX = 'solidnest'
 
 export const blockClass = `${PREFIX}-block`
-export const blockInnerClass = `${PREFIX}-block-inner`
 export const childrenWrapperClass = `${PREFIX}-children`
 export const spacerClass = `${PREFIX}-spacer`
 

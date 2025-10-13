@@ -25,7 +25,7 @@ import { calculateSelectionMode, normaliseSelection, updateSelection } from './s
 import { createDnd } from './dnd/createDnd'
 import { notNull } from './util/notNull'
 import { Dropzone } from './components/Dropzone'
-import { blockClass, blockInnerClass, childrenWrapperClass, injectCSS, spacerClass, spacingVar } from './styles'
+import { blockClass, childrenWrapperClass, injectCSS, spacerClass, spacingVar } from './styles'
 import { VirtualTree } from './virtual-tree'
 import { DragContainer, DragContainerProps } from './components/DragContainer'
 import { Placeholder } from './components/Placeholder'
@@ -306,7 +306,6 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
         {item.kind === 'block' && (
           <div
             ref={el => itemElements.set(item.id, el)}
-            class={blockInnerClass}
             style={{
               ...innerStyle(styles?.().get(item.id)),
               [spacingVar]: `${getSpacing(item.block)}px`,
@@ -324,18 +323,13 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
           </div>
         )}
         {item.kind === 'placeholder' && (
-          <div
-            ref={el => itemElements.set(item.id, el)}
-            class={blockInnerClass}
-            style={placeholderStyle(styles?.().get(item.id))}
-          >
+          <div ref={el => itemElements.set(item.id, el)} style={placeholderStyle(styles?.().get(item.id))}>
             <Dynamic component={props.placeholder ?? Placeholder} parent={item.parent} />
           </div>
         )}
         {item.kind === 'gap' && (
           <div
             ref={el => itemElements.set(item.id, el)}
-            class={blockInnerClass}
             style={{ 'z-index': 50, height: `${item.height}px`, ...dropzoneStyle(styles?.().get(item.id)) }}
           >
             <Dynamic component={props.dropzone ?? Dropzone} />
@@ -394,7 +388,6 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
     >
       <div
         ref={el => itemElements.set(RootItemId, el)}
-        class={blockInnerClass}
         style={{
           ...innerStyle(styles().get(RootItemId)),
           [spacingVar]: `${getSpacing(props.root)}px`,
