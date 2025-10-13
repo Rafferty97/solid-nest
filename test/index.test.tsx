@@ -6,7 +6,7 @@ describe('BlockTree', () => {
   it('can be instantiated', () => {
     const App = () => {
       return (
-        <BlockTree root={{ key: 'root' }} getKey={block => block.key}>
+        <BlockTree root={{ key: 'root' }} getKey={block => block.key} getChildren={() => []}>
           {() => <div />}
         </BlockTree>
       )
