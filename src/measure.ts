@@ -1,15 +1,9 @@
 import { childrenWrapperClass } from './styles'
 
 export type BlockMeasurements = Readonly<{
-  margin: Readonly<{
-    top: number
-    right: number
-    bottom: number
-    left: number
-  }>
   container: DOMRect
-  children: DOMRect
-  childrenVisible: boolean
+  children: Readonly<{ x: number; y: number; w: number }>[]
+  bottom: number
 }>
 
 export function measureBlocks<K>(root: K, blocks: Map<K, HTMLElement>): Map<K, BlockMeasurements> {
@@ -26,24 +20,25 @@ export function measureBlocks<K>(root: K, blocks: Map<K, HTMLElement>): Map<K, B
 
 function measureBlock<K>(key: K, block: HTMLElement): BlockMeasurements {
   const container = block.getBoundingClientRect()
-  let children = block
-    .querySelector(`.${childrenWrapperClass}[data-key=${JSON.stringify(key)}]`)
-    ?.getBoundingClientRect()
 
-  const childrenVisible = !!children && children.top < container.bottom && children.bottom > container.top
-  children ??= container
+  let y = container.y
 
-  let margin = { top: container.height, right: 0, bottom: 0, left: 0 }
-  if (childrenVisible) {
-    margin = {
-      top: children.top - container.top,
-      right: container.right - children.right,
-      bottom: container.bottom - children.bottom,
-      left: children.left - container.left,
-    }
+  const children: BlockMeasurements['children'] = []
+  for (const el of block.querySelectorAll(`.${childrenWrapperClass}[data-key=${JSON.stringify(key)}]`)) {
+    const rect = el.getBoundingClientRect()
+    children.push({
+      x: rect.x - container.x,
+      y: rect.top - y,
+      w: rect.width - container.width,
+    })
+    y = rect.bottom
   }
 
-  return { margin, container, children, childrenVisible }
+  const bottom = container.bottom - y
+
+  // const childrenVisible = !!children && children.top < container.bottom && children.bottom > container.top
+
+  return { container, children, bottom }
 }
 
 export function measureInnerBlocks<K>(blocks: Map<K, HTMLElement>): Map<K, DOMRect | undefined> {

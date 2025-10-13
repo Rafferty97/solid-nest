@@ -355,13 +355,10 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
       return (
         <For each={items().filter(i => i.kind === 'block')}>
           {item => (
-            <div
-              ref={el => itemElements.set(item.id, el)}
-              style={{
-                [spacingVar]: `${getSpacing(item.block)}px`,
-              }}
-            >
-              {renderItems(item, tree, styles)}
+            <div class={childrenWrapperClass} data-key={parent.id}>
+              <div ref={el => itemElements.set(item.id, el)} style={{ [spacingVar]: `${getSpacing(item.block)}px` }}>
+                {renderItems(item, tree, styles)}
+              </div>
             </div>
           )}
         </For>

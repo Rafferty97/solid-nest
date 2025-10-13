@@ -1,10 +1,9 @@
+import { children } from 'solid-js'
 import type { Meta, StoryObj } from 'storybook-solidjs-vite'
-import { BlockProps, BlockTree, createBlockTree } from '../src'
-import { BasicBlockWithChildren } from './components'
+import { BlockTree, createBlockTree } from '../src'
+import { BasicBlock, BasicBlockWithChildren } from './components'
 import { MyBlock } from './types'
 import './main.css'
-import { createStore } from 'solid-js/store'
-import { children } from 'solid-js'
 
 const meta = {
   title: 'BlockTree/Nesting',
@@ -88,15 +87,15 @@ export const MultipleSlots: Story = {
             if (props.block.data === 'fixed') {
               const resolved = children(() => props.children).toArray
               return (
-                <div>
-                  <p>A</p>
+                <BasicBlockWithChildren {...props}>
+                  <p style={{ margin: '0', padding: '10px 0' }}>A</p>
                   {resolved()[0]}
-                  <p>B</p>
+                  <p style={{ margin: '0', padding: '10px 0' }}>B</p>
                   {resolved()[1]}
-                </div>
+                </BasicBlockWithChildren>
               )
             }
-            return BasicBlockWithChildren(props)
+            return BasicBlock(props)
           }}
         />
       </div>

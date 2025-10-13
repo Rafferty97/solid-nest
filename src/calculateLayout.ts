@@ -3,10 +3,7 @@ import { Item, ItemId, RootItemId } from './Item'
 import { BlockMeasurements } from './measure'
 import { VirtualTree } from './virtual-tree'
 
-const ZeroMeasurement = {
-  margin: { left: 0, right: 0, top: 0, bottom: 0 },
-  childrenVisible: false,
-}
+const ZeroMeasurement = { children: [], bottom: 0 }
 
 export function calculateLayout<K>(
   tree: VirtualTree<K, any>,
@@ -16,41 +13,37 @@ export function calculateLayout<K>(
 
   let nextY = 0
 
-  const inner = (item: Item<K, any>, x: number, width: number, spacing: number, isFirst: boolean) => {
-    const { margin, childrenVisible } = measureItem(item.id) ?? ZeroMeasurement
-
-    if (!isFirst && item.kind !== 'placeholder') {
-      nextY += spacing
-    }
-
+  const inner = (item: Item<K, any>, x: number, width: number) => {
+    const measure = measureItem(item.id) ?? ZeroMeasurement
     const y = nextY
 
-    if (item.kind !== 'placeholder' || isFirst) {
-      nextY += margin.top
-    }
-
-    if (item.kind === 'block' && childrenVisible) {
+    if (item.kind === 'block' && measure.children.length > 0) {
       const children = tree.children(item.id)
-
-      const innerX = x + margin.left
-      const innerWidth = width - (margin.left + margin.right)
       const options = tree.options(item.block)
-      const innerSpacing = options.static ? 0 : options.spacing ?? DEFAULT_SPACING
+      const spacing = options.spacing ?? DEFAULT_SPACING
 
-      let isFirst = true
+      let i = 0
+      let m = { x: 0, y: 0, w: 0 }
       for (const child of children) {
-        inner(child, innerX, innerWidth, innerSpacing, isFirst)
-        isFirst = false
+        m = measure.children[i] ?? { ...m, y: spacing }
+        if (child.kind === 'placeholder' && i > 0) {
+          output.set(child.id, new DOMRect(x, nextY + m.y, width, 0))
+        } else {
+          nextY += m.y
+          inner(child, x + m.x, width + m.w)
+        }
+        i += 1
       }
     }
 
-    nextY += margin.bottom
+    nextY += measure.bottom
 
     output.set(item.id, new DOMRect(x, y, width, nextY - y))
   }
 
-  const rootWidth = measureItem(RootItemId)!.children.width
-  inner(tree.root, 0, rootWidth, 0, true)
+  const root = measureItem(RootItemId)!
+  const rootWidth = root.container.width - (root.children[0]?.w ?? 0)
+  inner(tree.root, 0, rootWidth)
 
   return output
 }
