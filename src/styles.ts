@@ -9,11 +9,11 @@ export const spacingVar = `--${PREFIX}-spacing`
 
 const stylesheet = new CSSStyleSheet()
 stylesheet.replaceSync(`
-  .${blockClass}[data-kind="container"] > div > .${blockClass} + .${blockClass} {
+  .${childrenWrapperClass} > .${blockClass} + .${blockClass} {
     margin-top: var(${spacingVar});
   }
 
-   .${blockClass}[data-kind="container"] > div > .${blockClass} + .${blockClass}[data-kind='placeholder'] {
+   .${childrenWrapperClass} > .${blockClass} + .${blockClass}[data-kind='placeholder'] {
     margin-top: 0;
   }
 

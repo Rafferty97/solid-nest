@@ -50,8 +50,8 @@ const nestedListWithCollapse: CollapsableBlock = {
       text: 'Drag me',
       open: true,
       children: [
-        { key: '2', text: 'Or drag me', open: true },
-        { key: '3', text: 'Reorder us!', open: true },
+        { key: '2', text: 'Or drag me', open: true, children: [] },
+        { key: '3', text: 'Reorder us!', open: true, children: [] },
       ],
     },
     { key: '4', text: 'Drag me', open: true },
@@ -67,6 +67,7 @@ export const BasicUsage: Story = {
     return (
       <div style={{ 'max-width': '60ch' }}>
         <BlockTree {...props} children={BasicBlock} />
+        Footer
       </div>
     )
   },

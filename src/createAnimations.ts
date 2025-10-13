@@ -41,7 +41,7 @@ export function createAnimations<K, T>(
 
     // Cleanup
     yield options().transitionDuration + 100
-    // setStyles(new Map())
+    setStyles(new Map())
   }
 
   let prevTree = tree()

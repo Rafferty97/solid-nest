@@ -13,7 +13,7 @@ export function calculateLayout<K>(
 
   let nextY = 0
 
-  const inner = (item: Item<K, any>, x: number, width: number, isFirst: boolean) => {
+  const inner = (item: Item<K, any>, x: number, width: number) => {
     const measure = measureItem(item.id) ?? ZeroMeasurement
     const y = nextY
 
@@ -22,10 +22,15 @@ export function calculateLayout<K>(
       let first = true
 
       for (const child of children) {
-        if (!first && child.kind !== 'placeholder') {
-          nextY += item.spacing
+        if (!first) {
+          if (child.kind === 'placeholder') {
+            output.set(child.id, new DOMRect(x, nextY + item.spacing, width, 0))
+            break
+          } else {
+            nextY += item.spacing
+          }
         }
-        inner(child, x, width, first)
+        inner(child, x, width)
         first = false
       }
     }
@@ -37,13 +42,13 @@ export function calculateLayout<K>(
         const child = children[i]!
         const offset = measure.children[i] ?? ZeroOffset
         nextY += offset.y
-        inner(child, x + offset.x, width + offset.w, i === 0)
+        inner(child, x + offset.x, width + offset.w)
       }
 
       nextY += measure.bottom
     }
 
-    if (item.kind === 'placeholder' && isFirst) {
+    if (item.kind === 'placeholder') {
       nextY += measure.bottom
     }
 
@@ -55,7 +60,7 @@ export function calculateLayout<K>(
   }
 
   const root = measureItem(tree.root.id)!
-  inner(tree.root, 0, root.container.width, true)
+  inner(tree.root, 0, root.container.width)
 
   return output
 }

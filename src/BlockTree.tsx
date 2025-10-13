@@ -1,6 +1,6 @@
 import { Accessor, Component, createMemo, For, JSX, onCleanup, onMount, Show } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
-import { Item, ItemId } from './Item'
+import { BlockItem, Item, ItemId } from './Item'
 import {
   CopyEvent,
   CutEvent,
@@ -110,7 +110,7 @@ export type BlockProps<K, T> = {
 
 export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
   const itemElements = new Map<ItemId, HTMLElement>()
-  let topElement!: HTMLDivElement
+  let focusElement!: HTMLDivElement
 
   onMount(injectCSS)
 
@@ -257,72 +257,75 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     onCleanup(() => document.removeEventListener('pointerdown', ondown, { capture: true }))
   })
 
+  const handlePointerDown = (item: BlockItem<K, T>) => (ev: PointerEvent) => {
+    if (!ev.isPrimary) return
+
+    ev.preventDefault()
+    ev.stopPropagation()
+
+    const mode = calculateSelectionMode(ev, options().multiselect)
+    const nextSelection = updateSelection(tree(), selectedBlocks(), item.key, mode)
+
+    const select = () => {
+      const { mode, keys } = nextSelection
+      props.onSelectionChange?.({ kind: 'blocks', key: item.key, mode, blocks: keys })
+      focusElement.focus({ preventScroll: true })
+    }
+
+    if (nextSelection.onClick) {
+      const handler = (ev: Event) => {
+        ev.preventDefault()
+        ev.stopPropagation()
+        select()
+      }
+      ev.currentTarget?.addEventListener('click', handler, { once: true })
+      removeClickHandler = () => ev.currentTarget?.removeEventListener('click', handler)
+    } else {
+      select()
+    }
+
+    if (ev.target instanceof HTMLElement && ev.currentTarget instanceof HTMLElement) {
+      for (const el of ev.currentTarget.querySelectorAll('[data-drag-handle]')) {
+        if (el.contains(ev.target)) {
+          onDragHandleClick(ev, item.key)
+          break
+        }
+      }
+    }
+  }
+
   const renderItem = (
+    parentId: ItemId | undefined,
     item: Item<K, T>,
     tree: Accessor<VirtualTree<K, T>>,
     itemProps: { dragging?: boolean } = {},
     styles?: Accessor<Map<string, AnimationState>>,
   ) => {
-    const handlePointerDown = (ev: PointerEvent) => {
-      if (!ev.isPrimary) return
-      if (item.kind !== 'block') return
-
-      ev.preventDefault()
-      ev.stopPropagation()
-
-      const mode = calculateSelectionMode(ev, options().multiselect)
-      const nextSelection = updateSelection(tree(), selectedBlocks(), item.key, mode)
-
-      const select = () => {
-        const { mode, keys } = nextSelection
-        props.onSelectionChange?.({ kind: 'blocks', key: item.key, mode, blocks: keys })
-        topElement.focus({ preventScroll: true })
-      }
-
-      if (nextSelection.onClick) {
-        const handler = (ev: Event) => {
-          ev.preventDefault()
-          ev.stopPropagation()
-          select()
-        }
-        ev.currentTarget?.addEventListener('click', handler, { once: true })
-        removeClickHandler = () => ev.currentTarget?.removeEventListener('click', handler)
-      } else {
-        select()
-      }
-
-      if (ev.target instanceof HTMLElement && ev.currentTarget instanceof HTMLElement) {
-        for (const el of ev.currentTarget.querySelectorAll('[data-drag-handle]')) {
-          if (el.contains(ev.target)) {
-            onDragHandleClick(ev, item.key)
-            break
-          }
-        }
-      }
+    if (item.kind === 'container') {
+      return (
+        <div
+          ref={el => itemElements.set(item.id, el)}
+          class={childrenWrapperClass}
+          data-key={parentId}
+          style={{ [spacingVar]: `${item.spacing}px` }}
+        >
+          <For each={tree().children(item.id)}>{child => renderItem(item.id, child, tree, {}, styles)}</For>
+          <div class={spacerClass} style={spacerStyle(styles?.().get(item.id))} />
+          {/* This element forces the container to adapt its height based on the spacer inside `renderItems` */}
+          <div style={{ 'margin-top': '-1px', 'padding-bottom': '1px' }} />
+        </div>
+      )
     }
 
-    return (
-      <div
-        class={blockClass}
-        data-kind={item.kind}
-        style={outerStyle(styles?.().get(item.id))}
-        onPointerDown={handlePointerDown}
-      >
-        {item.kind === 'container' && (
-          <div
-            ref={el => itemElements.set(item.id, el)}
-            style={{
-              // ...innerStyle(styles?.().get(item.id)),
-              [spacingVar]: `${item.spacing}px`,
-            }}
-          >
-            <div class={childrenWrapperClass} data-key={item.id}>
-              <For each={tree().children(item.id)}>{item => renderItem(item, tree, {}, styles)}</For>
-            </div>
-            <div class={spacerClass} style={spacerStyle(styles?.().get(item.id))} />
-          </div>
-        )}
-        {item.kind === 'block' && (
+    if (item.kind === 'block') {
+      return (
+        <div
+          class={blockClass}
+          data-kind={item.kind}
+          data-key={parentId}
+          style={outerStyle(styles?.().get(item.id))}
+          onPointerDown={handlePointerDown(item)}
+        >
           <div ref={el => itemElements.set(item.id, el)} style={innerStyle(styles?.().get(item.id))}>
             <Dynamic
               component={props.children}
@@ -331,33 +334,41 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
               selected={selectedBlocks().includes(item.key)}
               dragging={itemProps.dragging === true}
             >
-              <For each={tree().children(item.id)}>{item => <>{renderItem(item, tree, {}, styles)}</>}</For>
+              <For each={tree().children(item.id)}>{child => renderItem(item.id, child, tree, {}, styles)}</For>
             </Dynamic>
           </div>
-        )}
-        {item.kind === 'placeholder' && (
+        </div>
+      )
+    }
+
+    if (item.kind === 'placeholder') {
+      return (
+        <div class={blockClass} data-kind={item.kind} style={outerStyle(styles?.().get(item.id))}>
           <div ref={el => itemElements.set(item.id, el)} style={placeholderStyle(styles?.().get(item.id))}>
             <Dynamic component={props.placeholder ?? Placeholder} parent={item.parent} />
           </div>
-        )}
-        {item.kind === 'gap' && (
+        </div>
+      )
+    }
+
+    if (item.kind === 'gap') {
+      return (
+        <div class={blockClass} data-kind={item.kind} style={outerStyle(styles?.().get(item.id))}>
           <div
             ref={el => itemElements.set(item.id, el)}
             style={{ 'z-index': 50, height: `${item.height}px`, ...dropzoneStyle(styles?.().get(item.id)) }}
           >
             <Dynamic component={props.dropzone ?? Dropzone} />
           </div>
-        )}
-      </div>
-    )
+        </div>
+      )
+    }
   }
 
   return (
     <div
-      data-kind="container"
-      class={blockClass}
       onFocusOut={ev => {
-        if (ev.relatedTarget === topElement) return
+        if (ev.relatedTarget === focusElement) return
         props.onSelectionChange?.({ kind: 'deselect' })
       }}
       onKeyDown={handleKeyDown}
@@ -371,22 +382,8 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
         ['--solidnest-duration']: `${options().transitionDuration}ms`,
       }}
     >
-      <div
-        ref={el => itemElements.set(tree().root.id, el)}
-        style={{
-          ...innerStyle(styles().get(tree().root.id)),
-          [spacingVar]: `${tree().root.spacing}px`,
-          position: 'static',
-        }}
-      >
-        <div ref={topElement} tabIndex={-1} />
-        <div class={childrenWrapperClass} data-key={tree().root.id}>
-          <For each={tree().children(tree().root.id)}>{item => renderItem(item, tree, {}, styles)}</For>
-          <div class={spacerClass} style={spacerStyle(styles().get(tree().root.id))} />
-        </div>
-        {/* This element forces the container to adapt its height based on the spacer inside `renderItems` */}
-        <div style={{ 'margin-top': '-1px', 'padding-bottom': '1px' }} />
-      </div>
+      <div ref={focusElement} tabIndex={-1} />
+      {renderItem(undefined, tree().root, tree, {}, styles)}
       {/* Drag ghost */}
       <Show when={dragTree()} keyed>
         {tree => {
@@ -402,7 +399,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
             <div style={dragContainerStyle()}>
               <Dynamic component={props.dragContainer ?? DragContainer} blocks={blocks}>
                 <Show when={top()} keyed>
-                  {top => renderItem(top, () => tree, { dragging: true })}
+                  {top => renderItem(undefined, top, () => tree, { dragging: true })}
                 </Show>
               </Dynamic>
             </div>
