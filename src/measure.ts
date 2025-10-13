@@ -1,4 +1,4 @@
-import { blockInnerClass, childrenWrapperClass } from './styles'
+import { childrenWrapperClass } from './styles'
 
 export type BlockMeasurements = Readonly<{
   margin: Readonly<{
@@ -25,7 +25,7 @@ export function measureBlocks<K>(root: K, blocks: Map<K, HTMLElement>): Map<K, B
 }
 
 function measureBlock<K>(key: K, block: HTMLElement): BlockMeasurements {
-  const container = (block.querySelector(`:scope > .${blockInnerClass}`) ?? block).getBoundingClientRect()
+  const container = block.getBoundingClientRect()
   let children = block
     .querySelector(`.${childrenWrapperClass}[data-key=${JSON.stringify(key)}]`)
     ?.getBoundingClientRect()
@@ -49,11 +49,7 @@ function measureBlock<K>(key: K, block: HTMLElement): BlockMeasurements {
 export function measureInnerBlocks<K>(blocks: Map<K, HTMLElement>): Map<K, DOMRect | undefined> {
   const output = new Map()
   for (const [key, container] of blocks) {
-    output.set(key, measureInner(container))
+    output.set(key, container.getBoundingClientRect())
   }
   return output
-}
-
-function measureInner(block: HTMLElement): DOMRect | undefined {
-  return block.querySelector(`:scope > .${blockInnerClass}`)?.getBoundingClientRect()
 }

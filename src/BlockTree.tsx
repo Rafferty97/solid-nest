@@ -298,7 +298,6 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
 
     return (
       <div
-        ref={el => itemElements.set(item.id, el)}
         class={blockClass}
         data-kind={item.kind}
         style={outerStyle(styles?.().get(item.id))}
@@ -306,6 +305,7 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
       >
         {item.kind === 'block' && (
           <div
+            ref={el => itemElements.set(item.id, el)}
             class={blockInnerClass}
             style={{
               ...innerStyle(styles?.().get(item.id)),
@@ -324,12 +324,17 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
           </div>
         )}
         {item.kind === 'placeholder' && (
-          <div class={blockInnerClass} style={placeholderStyle(styles?.().get(item.id))}>
+          <div
+            ref={el => itemElements.set(item.id, el)}
+            class={blockInnerClass}
+            style={placeholderStyle(styles?.().get(item.id))}
+          >
             <Dynamic component={props.placeholder ?? Placeholder} parent={item.parent} />
           </div>
         )}
         {item.kind === 'gap' && (
           <div
+            ref={el => itemElements.set(item.id, el)}
             class={blockInnerClass}
             style={{ 'z-index': 50, height: `${item.height}px`, ...dropzoneStyle(styles?.().get(item.id)) }}
           >
@@ -350,14 +355,13 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
       return (
         <For each={items().filter(i => i.kind === 'block')}>
           {item => (
-            <div ref={el => itemElements.set(item.id, el)} class={blockClass} data-kind={item.kind}>
-              <div
-                style={{
-                  [spacingVar]: `${getSpacing(item.block)}px`,
-                }}
-              >
-                {renderItems(item, tree, styles)}
-              </div>
+            <div
+              ref={el => itemElements.set(item.id, el)}
+              style={{
+                [spacingVar]: `${getSpacing(item.block)}px`,
+              }}
+            >
+              {renderItems(item, tree, styles)}
             </div>
           )}
         </For>
@@ -374,9 +378,8 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
 
   return (
     <div
-      ref={el => itemElements.set(RootItemId, el)}
-      class={blockClass}
       data-kind="root"
+      class={blockClass}
       onFocusOut={ev => {
         if (ev.relatedTarget === topElement) return
         props.onSelectionChange?.({ kind: 'deselect' })
@@ -393,6 +396,7 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
       }}
     >
       <div
+        ref={el => itemElements.set(RootItemId, el)}
         class={blockInnerClass}
         style={{
           ...innerStyle(styles().get(RootItemId)),
