@@ -352,6 +352,8 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
             <div class={childrenWrapperClass} data-key={parent.id}>
               <div ref={el => itemElements.set(item.id, el)} style={{ [spacingVar]: `${getSpacing(item.block)}px` }}>
                 {renderItems(item, tree, styles)}
+                {/* This element forces the container to adapt its height based on the spacer inside `renderItems` */}
+                <div style={{ 'margin-top': '-1px', 'padding-bottom': '1px' }} />
               </div>
             </div>
           )}

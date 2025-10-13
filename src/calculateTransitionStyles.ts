@@ -104,7 +104,7 @@ export function innerStyle(state?: AnimationState): JSX.CSSProperties {
     position: 'absolute',
     left: '0',
     top: '0',
-    transition: state.transition ? `transform var(${durationVar}), width var(${durationVar})` : '',
+    transition: state.transition ? `transform var(${durationVar}) ease-out, width var(${durationVar}) ease-out` : '',
     transform: `translate(${state.deltaPos.x}px, ${state.deltaPos.y}px)`,
     width: `${state.size.x + state.deltaSize.x}px`,
     'box-sizing': 'border-box',
@@ -118,7 +118,7 @@ export function placeholderStyle(state?: AnimationState): JSX.CSSProperties {
     position: 'absolute',
     left: '0',
     top: '0',
-    transition: state.transition ? `width var(${durationVar})` : '',
+    transition: state.transition ? `width var(${durationVar}) ease-out` : '',
     width: `${state.size.x + state.deltaSize.x}px`,
     'box-sizing': 'border-box',
   }
@@ -127,7 +127,7 @@ export function placeholderStyle(state?: AnimationState): JSX.CSSProperties {
 export function spacerStyle(state?: AnimationState): JSX.CSSProperties {
   if (!state) return {}
   return {
-    transition: state.transition ? `margin-top var(${durationVar})` : '',
+    transition: state.transition ? `margin-top var(${durationVar}) ease-out` : '',
     'margin-top': `${state.deltaSize.y}px`,
   }
 }
@@ -139,7 +139,7 @@ export function dropzoneStyle(state?: AnimationState): JSX.CSSProperties {
     left: '0',
     top: '0',
     transition: state.transition
-      ? `transform var(${durationVar}), width var(${durationVar}), height var(${durationVar})`
+      ? `transform var(${durationVar}) ease-out, width var(${durationVar}) ease-out, height var(${durationVar}) ease-out`
       : '',
     transform: `translate(${state.deltaPos.x}px, ${state.deltaPos.y}px)`,
     width: `${state.size.x + state.deltaSize.x}px`,
