@@ -13,7 +13,7 @@ export function getInsertionPoints<K, T, R>(
 ): InsertionPoint<K>[] {
   const output: InsertionPoint<K>[] = []
 
-  const layout = calculateLayout(tree, id => measures.get(id), { skipHidden: true })
+  const layout = calculateLayout(tree, id => measures.get(id))
 
   const checkTag = (block: T | R) => {
     const acceptedTags = tree.options(block).accepts

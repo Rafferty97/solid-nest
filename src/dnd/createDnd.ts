@@ -1,7 +1,7 @@
 import { Accessor, createEffect, createMemo, createSignal, onCleanup, untrack } from 'solid-js'
 import { createBlockItemId, ItemId, RootItemId } from '../Item'
 import { Vec2 } from '../util/types'
-import { measureBlock, measureBlocks } from 'src/measure'
+import { measureBlocks } from 'src/measure'
 import { getInsertionPoints } from './getInsertionPoints'
 import { EventHandler, ReorderEvent } from 'src/events'
 import { VirtualTree } from 'src/virtual-tree'
@@ -59,7 +59,7 @@ export function createDnd<K, T, R>(
       const topElem = itemElements.get(topItem)
       if (!topElem) return
 
-      const topRect = measureBlock(topElem).outer
+      const topRect = topElem.getBoundingClientRect()
 
       const keys = blocks.map(tree.key)
       const offset = { x: topRect.x - pos.x, y: topRect.y - pos.y }
@@ -122,7 +122,7 @@ export function createDnd<K, T, R>(
     const state = dragState()
     if (!state) return undefined
 
-    const root = measureBlock(itemElements.get(RootItemId)!).children
+    const root = itemElements.get(RootItemId)!.getBoundingClientRect()
     const points = insertionPoints()
 
     // Check horizontal bounds

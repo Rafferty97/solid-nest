@@ -55,7 +55,7 @@ export function calculateTransitionStyles<K>(
 
     let adjust = zeroAdjust
     const a = initMeasures.get(id)
-    const b = prevMeasures.get(id)?.inner
+    const b = prevMeasures.get(id)?.container
     if (a && b) {
       adjust = {
         x: a.x - b.x,

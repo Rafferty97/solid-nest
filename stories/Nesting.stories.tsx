@@ -1,8 +1,10 @@
 import type { Meta, StoryObj } from 'storybook-solidjs-vite'
-import { BlockTree, createBlockTree } from '../src'
+import { BlockProps, BlockTree, createBlockTree } from '../src'
 import { BasicBlockWithChildren } from './components'
 import { MyBlock } from './types'
 import './main.css'
+import { createStore } from 'solid-js/store'
+import { children } from 'solid-js'
 
 const meta = {
   title: 'BlockTree/Nesting',
@@ -16,11 +18,12 @@ const basicList: MyBlock = {
   key: 'root',
   data: '',
   children: [
-    { key: '1', data: 'Group' },
-    { key: '2', data: 'Group' },
-    { key: '3', data: 'Item 1' },
-    { key: '4', data: 'Item 2' },
-    { key: '5', data: 'Item 3' },
+    { key: '1', data: 'Item 1' },
+    { key: '2', data: 'Item 2' },
+    { key: '3', data: 'Item 3' },
+    { key: '4', data: 'Item 4' },
+    { key: '5', data: 'Item 5' },
+    { key: '6', data: 'Item 6' },
   ],
 }
 
@@ -37,6 +40,64 @@ export const NestingRules: Story = {
             accepts: block.key === 'root' ? ['group'] : block.data === 'Group' ? ['block'] : [],
           })}
           children={BasicBlockWithChildren}
+        />
+      </div>
+    )
+  },
+}
+
+export const MultipleSlots: Story = {
+  render: () => {
+    const props = createBlockTree<MyBlock>({
+      key: 'root',
+      data: '',
+      children: [
+        {
+          key: 'top',
+          data: 'fixed',
+          children: [
+            {
+              key: 'a',
+              data: '',
+              children: [
+                { key: '1', data: 'Item 1' },
+                { key: '2', data: 'Item 2' },
+                { key: '3', data: 'Item 3' },
+              ],
+            },
+            {
+              key: 'b',
+              data: '',
+              children: [
+                { key: '4', data: 'Item 4' },
+                { key: '5', data: 'Item 5' },
+                { key: '6', data: 'Item 6' },
+              ],
+            },
+          ],
+        },
+      ],
+    })
+
+    return (
+      <div style={{ 'max-width': '60ch' }}>
+        <BlockTree
+          {...props}
+          getOptions={block => ({ static: block.data === 'fixed' })}
+          children={props => {
+            if (props.block.data === 'fixed') {
+              const resolved = children(() => props.children).toArray
+              return (
+                <div>
+                  <p>A</p>
+                  {resolved()[0]}
+                  <p>B</p>
+                  {resolved()[1]}
+                </div>
+              )
+            }
+            return BasicBlockWithChildren(props)
+          }}
         />
       </div>
     )

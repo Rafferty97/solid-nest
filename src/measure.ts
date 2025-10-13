@@ -7,8 +7,7 @@ export type BlockMeasurements = Readonly<{
     bottom: number
     left: number
   }>
-  outer: DOMRect
-  inner?: DOMRect
+  container: DOMRect
   children: DOMRect
   childrenVisible: boolean
 }>
@@ -18,32 +17,33 @@ export function measureBlocks<K>(root: K, blocks: Map<K, HTMLElement>): Map<K, B
 
   blocks.get(root)?.setAttribute('data-measuring', 'measuring')
   for (const [key, container] of blocks) {
-    output.set(key, measureBlock(container))
+    output.set(key, measureBlock(key, container))
   }
   blocks.get(root)?.removeAttribute('data-measuring')
 
   return output
 }
 
-export function measureBlock(block: HTMLElement): BlockMeasurements {
-  const outer = block.getBoundingClientRect()
-  const inner = block.querySelector(`:scope > .${blockInnerClass}`)?.getBoundingClientRect()
-  let children = block.querySelector(`:scope .${childrenWrapperClass}`)?.getBoundingClientRect()
+function measureBlock<K>(key: K, block: HTMLElement): BlockMeasurements {
+  const container = (block.querySelector(`:scope > .${blockInnerClass}`) ?? block).getBoundingClientRect()
+  let children = block
+    .querySelector(`.${childrenWrapperClass}[data-key=${JSON.stringify(key)}]`)
+    ?.getBoundingClientRect()
 
-  const childrenVisible = !!children && children.top < outer.bottom && children.bottom > outer.top
-  children ??= outer
+  const childrenVisible = !!children && children.top < container.bottom && children.bottom > container.top
+  children ??= container
 
-  let margin = { top: outer.height, right: 0, bottom: 0, left: 0 }
+  let margin = { top: container.height, right: 0, bottom: 0, left: 0 }
   if (childrenVisible) {
     margin = {
-      top: children.top - outer.top,
-      right: outer.right - children.right,
-      bottom: outer.bottom - children.bottom,
-      left: children.left - outer.left,
+      top: children.top - container.top,
+      right: container.right - children.right,
+      bottom: container.bottom - children.bottom,
+      left: children.left - container.left,
     }
   }
 
-  return { margin, outer, inner, children, childrenVisible }
+  return { margin, container, children, childrenVisible }
 }
 
 export function measureInnerBlocks<K>(blocks: Map<K, HTMLElement>): Map<K, DOMRect | undefined> {
@@ -54,6 +54,6 @@ export function measureInnerBlocks<K>(blocks: Map<K, HTMLElement>): Map<K, DOMRe
   return output
 }
 
-export function measureInner(block: HTMLElement): DOMRect | undefined {
+function measureInner(block: HTMLElement): DOMRect | undefined {
   return block.querySelector(`:scope > .${blockInnerClass}`)?.getBoundingClientRect()
 }

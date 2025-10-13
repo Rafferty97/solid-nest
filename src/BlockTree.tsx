@@ -1,6 +1,6 @@
 import { Accessor, Component, createMemo, For, JSX, onCleanup, onMount, Show } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
-import { Item, ItemId, RootItemId } from './Item'
+import { BlockItem, Item, ItemId, RootItemId } from './Item'
 import {
   CopyEvent,
   CutEvent,
@@ -12,7 +12,6 @@ import {
   ReorderEvent,
   SelectionEvent,
 } from './events'
-import { measureBlock } from './measure'
 import { createAnimations } from './createAnimations'
 import {
   AnimationState,
@@ -93,6 +92,8 @@ export type BlockOptions = {
   tag?: string
   /** The set of tags that this block accepts as children. */
   accepts?: string[]
+  /** Whether the block's children are static, i.e. cannot be selected or modified. */
+  static?: boolean
 }
 
 export type Selection<K> = { blocks?: K[]; place?: Place<K> }
@@ -178,8 +179,8 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
 
   const containerHeight = createMemo(() => {
     if (dragState() != null && props.fixedHeightWhileDragging) {
-      const root = measureBlock(itemElements.get(RootItemId)!)
-      return `${root.outer.height}px`
+      const root = itemElements.get(RootItemId)!.getBoundingClientRect()
+      return `${root.height}px`
     } else {
       return 'auto'
     }
@@ -318,7 +319,7 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
               selected={selectedBlocks().includes(item.key)}
               dragging={itemProps.dragging === true}
             >
-              {renderItems(item.id, tree, styles)}
+              {renderItems(item, tree, styles)}
             </Dynamic>
           </div>
         )}
@@ -340,17 +341,35 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
   }
 
   const renderItems = (
-    parent: ItemId,
+    parent: BlockItem<K, T | R>,
     tree: Accessor<VirtualTree<K, T, R>>,
     styles?: Accessor<Map<string, AnimationState>>,
   ) => {
-    const items = createMemo(() => tree().children(parent))
-    return (
-      <div class={childrenWrapperClass}>
-        <For each={items()}>{item => renderItem(item, tree, {}, styles)}</For>
-        <div class={spacerClass} style={spacerStyle(styles?.().get(parent))} />
-      </div>
-    )
+    const items = createMemo(() => tree().children(parent.id))
+    if (props.getOptions?.(parent.block)?.static) {
+      return (
+        <For each={items().filter(i => i.kind === 'block')}>
+          {item => (
+            <div ref={el => itemElements.set(item.id, el)} class={blockClass} data-kind={item.kind}>
+              <div
+                style={{
+                  [spacingVar]: `${getSpacing(item.block)}px`,
+                }}
+              >
+                {renderItems(item, tree, styles)}
+              </div>
+            </div>
+          )}
+        </For>
+      )
+    } else {
+      return (
+        <div class={childrenWrapperClass} data-key={parent.id}>
+          <For each={items()}>{item => renderItem(item, tree, {}, styles)}</For>
+          <div class={spacerClass} style={spacerStyle(styles?.().get(parent.id))} />
+        </div>
+      )
+    }
   }
 
   return (
@@ -382,7 +401,7 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
         }}
       >
         <div ref={topElement} tabIndex={-1} />
-        {renderItems(RootItemId, tree, styles)}
+        {renderItems(tree().root, tree, styles)}
         {/* This element forces the container to adapt its height based on the spacer inside `renderItems` */}
         <div style={{ 'margin-top': '-1px', 'padding-bottom': '1px' }} />
       </div>
