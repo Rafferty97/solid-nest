@@ -17,12 +17,11 @@ const basicList: MyBlock = {
   key: 'root',
   data: '',
   children: [
-    { key: '1', data: 'Item 1' },
-    { key: '2', data: 'Item 2' },
-    { key: '3', data: 'Item 3' },
-    { key: '4', data: 'Item 4' },
-    { key: '5', data: 'Item 5' },
-    { key: '6', data: 'Item 6' },
+    { key: '1', data: 'Group' },
+    { key: '2', data: 'Group' },
+    { key: '3', data: 'Item 1' },
+    { key: '4', data: 'Item 2' },
+    { key: '5', data: 'Item 3' },
   ],
 }
 
@@ -45,7 +44,7 @@ export const NestingRules: Story = {
   },
 }
 
-export const MultipleSlots: Story = {
+export const StaticChildren: Story = {
   render: () => {
     const props = createBlockTree<MyBlock>({
       key: 'root',
@@ -53,7 +52,7 @@ export const MultipleSlots: Story = {
       children: [
         {
           key: 'top',
-          data: 'fixed',
+          data: 'static children',
           children: [
             {
               key: 'a',
@@ -82,9 +81,9 @@ export const MultipleSlots: Story = {
       <div style={{ 'max-width': '60ch' }}>
         <BlockTree
           {...props}
-          getOptions={block => ({ static: block.data === 'fixed' })}
+          getOptions={block => ({ static: block.key === 'top' })}
           children={props => {
-            if (props.block.data === 'fixed') {
+            if (props.key === 'top') {
               const resolved = children(() => props.children).toArray
               return (
                 <BasicBlockWithChildren {...props}>
