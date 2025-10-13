@@ -1,6 +1,6 @@
 import { Accessor, Component, createMemo, For, JSX, onCleanup, onMount, Show } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
-import { BlockItem, Item, ItemId, RootItemId } from './Item'
+import { Item, ItemId } from './Item'
 import {
   CopyEvent,
   CutEvent,
@@ -29,17 +29,16 @@ import { blockClass, childrenWrapperClass, injectCSS, spacerClass, spacingVar } 
 import { VirtualTree } from './virtual-tree'
 import { DragContainer, DragContainerProps } from './components/DragContainer'
 import { Placeholder } from './components/Placeholder'
-import { DEFAULT_SPACING } from './constants'
 
-export type BlockTreeProps<K, T, R = T> = {
-  /** The root block. */
-  root: R
+export type BlockTreeProps<K, T> = {
+  /** The root container. */
+  root: Container<K, T>
   /** Gets the key of a block. */
-  getKey: (block: T | R) => K
-  /** Gets the child blocks of a block. */
-  getChildren?: (block: T | R) => T[] | null | undefined
+  getKey: (block: T) => K
   /** Gets the configuration options for a block. */
-  getOptions?: (block: T | R) => BlockOptions | null | undefined
+  getOptions?: (block: T) => BlockOptions | null | undefined
+  /** Gets the configuration options for a block. */
+  getContainers?: (block: T) => Container<K, T>[] | null | undefined
   /**
    * The current selection, which can be either:
    * - A set of blocks, in the order they were selected
@@ -83,17 +82,20 @@ export type BlockTreeProps<K, T, R = T> = {
 
 /** Configures how a block is rendered and interacts with other blocks. */
 export type BlockOptions = {
-  /** The spacing between child blocks, in pixels. */
-  spacing?: number
   /**
    * The block's tag, used to determine which parent blocks it can be dragged into.
    * Blocks without a tag can be accepted by any parent.
    * */
   tag?: string
+}
+
+export type Container<K, T> = {
+  key: K
+  /** The spacing between child blocks, in pixels. */
+  spacing?: number
   /** The set of tags that this block accepts as children. */
   accepts?: string[]
-  /** Whether the block's children are static, i.e. cannot be selected or modified. */
-  static?: boolean
+  blocks: T[]
 }
 
 export type Selection<K> = { blocks?: K[]; place?: Place<K> }
@@ -106,7 +108,7 @@ export type BlockProps<K, T> = {
   children: JSX.Element
 }
 
-export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
+export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
   const itemElements = new Map<ItemId, HTMLElement>()
   let topElement!: HTMLDivElement
 
@@ -122,10 +124,12 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
   const blockMap = createMemo(() => {
     const output = new Map<K, T>()
     const insert = (block: T) => {
-      output.set(props.getKey(block), block)
-      props.getChildren?.(block)?.forEach(insert)
+      const key = props.getKey(block)
+      output.set(key, block)
+      const containers = props.getContainers?.(block)
+      containers?.forEach(c => c.blocks.forEach(insert))
     }
-    props.getChildren?.(props.root)?.forEach(insert)
+    props.root.blocks.forEach(insert)
     return output
   })
 
@@ -138,18 +142,21 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
     }
     if (selection?.blocks) {
       const keys = new Set(selection.blocks)
-      const process = (block: T | R): Place<K> | undefined => {
-        const parent = props.getKey(block)
-        const blocks = props.getChildren?.(block) ?? []
+      const process = (container: Container<K, T>): Place<K> | undefined => {
+        const { key: parent, blocks } = container
 
         let before: K | null = null
         for (let i = blocks.length - 1; i >= 0; i--) {
-          const key = props.getKey(blocks[i]!)
+          const block = blocks[i]!
+          const key = props.getKey(block)
           if (keys.has(key)) {
             return { parent, before }
           }
-          const result = process(blocks[i]!)
-          if (result) return result
+          const containers = props.getContainers?.(block) ?? []
+          for (const container of containers.toReversed()) {
+            const result = process(container)
+            if (result) return result
+          }
           before = key
         }
         return undefined
@@ -158,11 +165,11 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
     }
   })
 
-  const inputTree = VirtualTree.create<K, T, R>(
+  const inputTree = VirtualTree.create<K, T>(
     () => props.root,
     block => props.getKey(block),
-    block => props.getChildren?.(block) ?? [],
     block => props.getOptions?.(block) ?? {},
+    block => props.getContainers?.(block) ?? [],
   )
 
   const blocksToDrag = (key: K) => {
@@ -179,7 +186,7 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
 
   const containerHeight = createMemo(() => {
     if (dragState() != null && props.fixedHeightWhileDragging) {
-      const root = itemElements.get(RootItemId)!.getBoundingClientRect()
+      const root = itemElements.get(tree().root.id)!.getBoundingClientRect()
       return `${root.height}px`
     } else {
       return 'auto'
@@ -250,11 +257,9 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
     onCleanup(() => document.removeEventListener('pointerdown', ondown, { capture: true }))
   })
 
-  const getSpacing = (block: T | R) => props.getOptions?.(block)?.spacing ?? DEFAULT_SPACING
-
   const renderItem = (
     item: Item<K, T>,
-    tree: Accessor<VirtualTree<K, T, R>>,
+    tree: Accessor<VirtualTree<K, T>>,
     itemProps: { dragging?: boolean } = {},
     styles?: Accessor<Map<string, AnimationState>>,
   ) => {
@@ -303,14 +308,22 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
         style={outerStyle(styles?.().get(item.id))}
         onPointerDown={handlePointerDown}
       >
-        {item.kind === 'block' && (
+        {item.kind === 'container' && (
           <div
             ref={el => itemElements.set(item.id, el)}
             style={{
-              ...innerStyle(styles?.().get(item.id)),
-              [spacingVar]: `${getSpacing(item.block)}px`,
+              // ...innerStyle(styles?.().get(item.id)),
+              [spacingVar]: `${item.spacing}px`,
             }}
           >
+            <div class={childrenWrapperClass} data-key={item.id}>
+              <For each={tree().children(item.id)}>{item => renderItem(item, tree, {}, styles)}</For>
+            </div>
+            <div class={spacerClass} style={spacerStyle(styles?.().get(item.id))} />
+          </div>
+        )}
+        {item.kind === 'block' && (
+          <div ref={el => itemElements.set(item.id, el)} style={innerStyle(styles?.().get(item.id))}>
             <Dynamic
               component={props.children}
               key={item.key}
@@ -318,7 +331,7 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
               selected={selectedBlocks().includes(item.key)}
               dragging={itemProps.dragging === true}
             >
-              {renderItems(item, tree, styles)}
+              <For each={tree().children(item.id)}>{item => <>{renderItem(item, tree, {}, styles)}</>}</For>
             </Dynamic>
           </div>
         )}
@@ -339,39 +352,9 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
     )
   }
 
-  const renderItems = (
-    parent: BlockItem<K, T | R>,
-    tree: Accessor<VirtualTree<K, T, R>>,
-    styles?: Accessor<Map<string, AnimationState>>,
-  ) => {
-    const items = createMemo(() => tree().children(parent.id))
-    if (props.getOptions?.(parent.block)?.static) {
-      return (
-        <For each={items().filter(i => i.kind === 'block')}>
-          {item => (
-            <div class={childrenWrapperClass} data-key={parent.id}>
-              <div ref={el => itemElements.set(item.id, el)} style={{ [spacingVar]: `${getSpacing(item.block)}px` }}>
-                {renderItems(item, tree, styles)}
-                {/* This element forces the container to adapt its height based on the spacer inside `renderItems` */}
-                <div style={{ 'margin-top': '-1px', 'padding-bottom': '1px' }} />
-              </div>
-            </div>
-          )}
-        </For>
-      )
-    } else {
-      return (
-        <div class={childrenWrapperClass} data-key={parent.id}>
-          <For each={items()}>{item => renderItem(item, tree, {}, styles)}</For>
-          <div class={spacerClass} style={spacerStyle(styles?.().get(parent.id))} />
-        </div>
-      )
-    }
-  }
-
   return (
     <div
-      data-kind="root"
+      data-kind="container"
       class={blockClass}
       onFocusOut={ev => {
         if (ev.relatedTarget === topElement) return
@@ -389,15 +372,18 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
       }}
     >
       <div
-        ref={el => itemElements.set(RootItemId, el)}
+        ref={el => itemElements.set(tree().root.id, el)}
         style={{
-          ...innerStyle(styles().get(RootItemId)),
-          [spacingVar]: `${getSpacing(props.root)}px`,
+          ...innerStyle(styles().get(tree().root.id)),
+          [spacingVar]: `${tree().root.spacing}px`,
           position: 'static',
         }}
       >
         <div ref={topElement} tabIndex={-1} />
-        {renderItems(tree().root, tree, styles)}
+        <div class={childrenWrapperClass} data-key={tree().root.id}>
+          <For each={tree().children(tree().root.id)}>{item => renderItem(item, tree, {}, styles)}</For>
+          <div class={spacerClass} style={spacerStyle(styles().get(tree().root.id))} />
+        </div>
         {/* This element forces the container to adapt its height based on the spacer inside `renderItems` */}
         <div style={{ 'margin-top': '-1px', 'padding-bottom': '1px' }} />
       </div>
@@ -405,7 +391,7 @@ export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
       <Show when={dragTree()} keyed>
         {tree => {
           const blocks = tree
-            .children(RootItemId)
+            .children(tree.root.id)
             .map(item => (item.kind === 'block' ? blockMap().get(item.key) : null))
             .filter(notNull)
           const top = createMemo(() => {

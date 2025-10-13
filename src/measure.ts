@@ -15,6 +15,7 @@ export function measureBlocks<K>(root: K, blocks: Map<K, HTMLElement>): Map<K, B
   }
   blocks.get(root)?.removeAttribute('data-measuring')
 
+  console.log(output)
   return output
 }
 

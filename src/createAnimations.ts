@@ -1,11 +1,11 @@
 import { Accessor, createEffect, createSignal, onCleanup } from 'solid-js'
-import { ItemId, RootItemId } from './Item'
+import { ItemId } from './Item'
 import { calculateTransitionStyles, AnimationState } from './calculateTransitionStyles'
 import { measureBlocks, measureInnerBlocks } from './measure'
 import { VirtualTree } from './virtual-tree'
 
-export function createAnimations<K, T, R>(
-  input: Accessor<VirtualTree<K, T, R>>,
+export function createAnimations<K, T>(
+  input: Accessor<VirtualTree<K, T>>,
   itemElements: Map<ItemId, HTMLElement>,
   options: Accessor<{ transitionDuration: number }>,
 ) {
@@ -16,22 +16,24 @@ export function createAnimations<K, T, R>(
     fn: Generator<number>
   }>()
 
-  function* animate(prev: VirtualTree<K, T, R>, next: VirtualTree<K, T, R>) {
+  function* animate(prev: VirtualTree<K, T>, next: VirtualTree<K, T>) {
     const initRects = measureInnerBlocks(itemElements)
 
     // F. Before state measurement
     setStyles(new Map())
     yield 0
-    const prevRects = measureBlocks(RootItemId, itemElements)
+    const prevRects = measureBlocks(prev.root.id, itemElements)
 
     // L. After state measurement
     setTree(next)
     yield 0
-    const nextRects = measureBlocks(RootItemId, itemElements)
+    const nextRects = measureBlocks(next.root.id, itemElements)
 
     // I. Apply inverse styles
     const { invert, play } = calculateTransitionStyles(prev, next, initRects, prevRects, nextRects)
     setStyles(invert)
+
+    // debugger
 
     // P. Play animation
     yield 10
@@ -39,13 +41,13 @@ export function createAnimations<K, T, R>(
 
     // Cleanup
     yield options().transitionDuration + 100
-    setStyles(new Map())
+    // setStyles(new Map())
   }
 
   let prevTree = tree()
   createEffect(() => {
     const nextTree = input()
-    if (itemElements.has(RootItemId)) {
+    if (itemElements.has(nextTree.root.id)) {
       setAnimationState({ step: 0, fn: animate(prevTree, nextTree) })
     }
     prevTree = nextTree

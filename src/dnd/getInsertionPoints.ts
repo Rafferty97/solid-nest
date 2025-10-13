@@ -6,20 +6,14 @@ import { VirtualTree } from 'src/virtual-tree'
 
 export type InsertionPoint<K> = { id: ItemId; place: Place<K>; y: number }
 
-export function getInsertionPoints<K, T, R>(
-  tree: VirtualTree<K, T, R>,
+export function getInsertionPoints<K, T>(
+  tree: VirtualTree<K, T>,
   tags: string[],
   measures: Map<ItemId, BlockMeasurements>,
 ): InsertionPoint<K>[] {
   const output: InsertionPoint<K>[] = []
 
   const layout = calculateLayout(tree, id => measures.get(id))
-
-  const childAccepts = (block: T | R) => {
-    const options = tree.options(block)
-    if (options.static) return false
-    return !tags.find(tag => !options.accepts?.includes(tag))
-  }
 
   const inner = (item: Item<K, T>, parent: K, accepts: boolean) => {
     const { id } = item
@@ -39,16 +33,22 @@ export function getInsertionPoints<K, T, R>(
     }
 
     // Iterate children
-    if (item.kind === 'block') {
-      const accepts = childAccepts(item.block)
+    if (item.kind === 'container') {
+      const accepts = !tags.find(tag => !item.accepts.includes(tag))
       for (const child of tree.children(item.id)) {
         inner(child, item.key, accepts)
+      }
+    }
+
+    if (item.kind === 'block') {
+      for (const child of tree.children(item.id)) {
+        inner(child, item.key, false)
       }
     }
   }
 
   const root = tree.root
-  const accepts = childAccepts(root.block)
+  const accepts = !tags.find(tag => !root.accepts.includes(tag))
   for (const child of tree.children(root.id)) {
     inner(child, root.key, accepts)
   }

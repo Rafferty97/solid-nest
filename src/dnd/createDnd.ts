@@ -1,5 +1,5 @@
 import { Accessor, createEffect, createMemo, createSignal, onCleanup, untrack } from 'solid-js'
-import { createBlockItemId, ItemId, RootItemId } from '../Item'
+import { createBlockItemId, ItemId } from '../Item'
 import { Vec2 } from '../util/types'
 import { measureBlocks } from 'src/measure'
 import { getInsertionPoints } from './getInsertionPoints'
@@ -19,8 +19,8 @@ type ClickedBlock<K> = {
   pos: Vec2
 }
 
-export function createDnd<K, T, R>(
-  input: Accessor<VirtualTree<K, T, R>>,
+export function createDnd<K, T>(
+  input: Accessor<VirtualTree<K, T>>,
   options: Accessor<{ dragRadius: Vec2; dragThreshold: number }>,
   itemElements: Map<ItemId, HTMLElement>,
   getBlocksToDrag: (key: K) => T[],
@@ -112,9 +112,10 @@ export function createDnd<K, T, R>(
     const state = dragState()
     if (!state) return []
 
-    const rects = measureBlocks(RootItemId, itemElements)
+    const input = treeWithoutDragged()
+    const rects = measureBlocks(input.root.id, itemElements)
 
-    return getInsertionPoints(treeWithoutDragged(), state.tags, rects)
+    return getInsertionPoints(input, state.tags, rects)
   })
 
   // Calculate where the dragged item(s) should be inserted
@@ -122,7 +123,8 @@ export function createDnd<K, T, R>(
     const state = dragState()
     if (!state) return undefined
 
-    const root = itemElements.get(RootItemId)!.getBoundingClientRect()
+    const input = treeWithoutDragged()
+    const root = itemElements.get(input.root.id)!.getBoundingClientRect()
     const points = insertionPoints()
 
     // Check horizontal bounds

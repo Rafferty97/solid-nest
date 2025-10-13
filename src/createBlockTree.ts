@@ -1,6 +1,6 @@
 import { createSignal } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
-import { Place, Selection } from 'src'
+import { Container, Place, Selection } from 'src'
 import { SelectionEvent, InsertEvent, ReorderEvent, RemoveEvent } from 'src'
 
 type Block<T> = { key: unknown; children?: T[] }
@@ -29,8 +29,11 @@ export function createBlockTree<T extends Block<T>>(init: T) {
   const [selection, setSelection] = createSignal<Selection<K>>({})
 
   return {
-    root,
+    get root(): Container<K, T> {
+      return { key: root.key, blocks: root.children ?? [], spacing: 12 }
+    },
     setRoot,
+
     get selection() {
       return selection()
     },
@@ -40,8 +43,8 @@ export function createBlockTree<T extends Block<T>>(init: T) {
       return block.key
     },
 
-    getChildren(block: T) {
-      return block.children
+    getContainers(block: T): Container<K, T>[] {
+      return block.children ? [{ key: block.key, blocks: block.children, spacing: 12 }] : []
     },
 
     onSelectionChange(event: SelectionEvent<K>) {

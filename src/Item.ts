@@ -1,23 +1,30 @@
+import { Container } from './BlockTree'
+
 export type ItemId = string & { readonly brand: unique symbol }
 
-export type Item<K, T = unknown> = BlockItem<K, T> | PlaceholderItem<K> | GapItem
+export type Item<K, T = unknown> = ContainerItem<K> | BlockItem<K, T> | PlaceholderItem<K> | GapItem
 
 export type ItemKind = Item<any, any>['kind']
 
+export type ContainerItem<K> = Readonly<{ id: ItemId; kind: 'container'; key: K; spacing: number; accepts: string[] }>
 export type BlockItem<K, T> = Readonly<{ id: ItemId; kind: 'block'; key: K; block: T }>
 export type PlaceholderItem<K> = Readonly<{ id: ItemId; kind: 'placeholder'; parent: K }>
 export type GapItem = Readonly<{ id: ItemId; kind: 'gap'; before: ItemId; height: number }>
 
-export const RootItemId = 'root' as ItemId
 export const DropzoneItemId = 'gap' as ItemId
 
-export function createRootItem<K, T>(block: T, key: K): BlockItem<K, T> {
+export function createContainerItem<K>(container: Container<K, unknown>): ContainerItem<K> {
   return {
-    id: RootItemId,
-    kind: 'block',
-    key,
-    block,
+    id: `c-${container.key}` as ItemId,
+    kind: 'container',
+    key: container.key,
+    spacing: container.spacing ?? 0,
+    accepts: container.accepts ?? [],
   }
+}
+
+export function createContainerItemId<K>(key: K): ItemId {
+  return `c-${key}` as ItemId
 }
 
 export function createBlockItem<K, T>(block: T, key: K): BlockItem<K, T> {
@@ -29,8 +36,8 @@ export function createBlockItem<K, T>(block: T, key: K): BlockItem<K, T> {
   }
 }
 
-export function createBlockItemId<K>(key: K, rootKey?: K): ItemId {
-  return key === rootKey ? RootItemId : (`b-${key}` as ItemId)
+export function createBlockItemId<K>(key: K): ItemId {
+  return `b-${key}` as ItemId
 }
 
 export function createPlaceholderItem<K>(parent: K): PlaceholderItem<K> {
