@@ -15,20 +15,20 @@ import {
 import { notNull } from './util/notNull'
 import { BlockOptions } from './BlockTree'
 
-interface VirtualTreeInit<K, T> {
-  readonly root: BlockItem<K, T>
-  readonly key: (block: T) => K
-  readonly options: (block: T) => BlockOptions
+interface VirtualTreeInit<K, T, R = T> {
+  readonly root: BlockItem<K, R>
+  readonly key: (block: T | R) => K
+  readonly options: (block: T | R) => BlockOptions
 }
 
-export class VirtualTree<K, T> {
-  readonly root: BlockItem<K, T>
-  readonly key: (block: T) => K
-  readonly options: (block: T) => BlockOptions
+export class VirtualTree<K, T, R = T> {
+  readonly root: BlockItem<K, R>
+  readonly key: (block: T | R) => K
+  readonly options: (block: T | R) => BlockOptions
   private readonly _items: Map<ItemId, Item<K, T>>
   private readonly _childMap: Map<ItemId, ItemId[]>
 
-  constructor(init: VirtualTreeInit<K, T>, items: Map<ItemId, Item<K, T>>, childMap: Map<ItemId, ItemId[]>) {
+  constructor(init: VirtualTreeInit<K, T, R>, items: Map<ItemId, Item<K, T>>, childMap: Map<ItemId, ItemId[]>) {
     this.root = init.root
     this.key = init.key
     this.options = init.options
@@ -36,12 +36,12 @@ export class VirtualTree<K, T> {
     this._childMap = childMap
   }
 
-  static create<K, T>(
-    getRoot: Accessor<T>,
-    getKey: (block: T) => K,
-    getChildren: (block: T) => T[],
-    getOptions: (block: T) => BlockOptions,
-  ): Accessor<VirtualTree<K, T>> {
+  static create<K, T, R = T>(
+    getRoot: Accessor<R>,
+    getKey: (block: T | R) => K,
+    getChildren: (block: T | R) => T[],
+    getOptions: (block: T | R) => BlockOptions,
+  ): Accessor<VirtualTree<K, T, R>> {
     let cache = new Map<T, BlockItem<K, T>>()
 
     return createMemo(() => {
@@ -49,13 +49,12 @@ export class VirtualTree<K, T> {
       const childMap = new Map<ItemId, ItemId[]>()
       const nextCache = new Map<T, BlockItem<K, T>>()
 
-      const process = (item: BlockItem<K, T>, children: T[]) => {
+      const process = (item: BlockItem<K, T | R>, children: T[]) => {
         const childIds: ItemId[] = []
-
-        items.set(item.id, item)
 
         children.forEach(child => {
           const item = cache.get(child) ?? createBlockItem(child, getKey(child))
+          items.set(item.id, item)
           childIds.push(item.id)
           nextCache.set(child, item)
           process(item, getChildren(child))
@@ -74,7 +73,7 @@ export class VirtualTree<K, T> {
 
       cache = nextCache
 
-      const init: VirtualTreeInit<K, T> = {
+      const init: VirtualTreeInit<K, T, R> = {
         root: rootItem,
         key: getKey,
         options: getOptions,
@@ -114,7 +113,7 @@ export class VirtualTree<K, T> {
     return false
   }
 
-  removeBlocks(keys: Iterable<K>): VirtualTree<K, T> {
+  removeBlocks(keys: Iterable<K>): VirtualTree<K, T, R> {
     const ids = new Set<ItemId>()
     for (const key of keys) {
       ids.add(createBlockItemId(key))
@@ -122,7 +121,7 @@ export class VirtualTree<K, T> {
     return this.removeItems(ids)
   }
 
-  removeItems(ids: Set<ItemId>): VirtualTree<K, T> {
+  removeItems(ids: Set<ItemId>): VirtualTree<K, T, R> {
     const childMap = new Map()
     for (const [id, children] of this._childMap) {
       const newChildren = children.filter(id => !ids.has(id))

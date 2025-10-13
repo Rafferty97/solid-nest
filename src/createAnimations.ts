@@ -4,8 +4,8 @@ import { calculateTransitionStyles, AnimationState } from './calculateTransition
 import { measureBlocks, measureInnerBlocks } from './measure'
 import { VirtualTree } from './virtual-tree'
 
-export function createAnimations<K, T>(
-  input: Accessor<VirtualTree<K, T>>,
+export function createAnimations<K, T, R>(
+  input: Accessor<VirtualTree<K, T, R>>,
   itemElements: Map<ItemId, HTMLElement>,
   options: Accessor<{ transitionDuration: number }>,
 ) {
@@ -16,7 +16,7 @@ export function createAnimations<K, T>(
     fn: Generator<number>
   }>()
 
-  function* animate(prev: VirtualTree<K, T>, next: VirtualTree<K, T>) {
+  function* animate(prev: VirtualTree<K, T, R>, next: VirtualTree<K, T, R>) {
     const initRects = measureInnerBlocks(itemElements)
 
     // F. Before state measurement

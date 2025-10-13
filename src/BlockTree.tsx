@@ -38,7 +38,9 @@ export type BlockTreeProps<K, T, R = T> = {
   /** Gets the key of a block. */
   getKey: (block: T | R) => K
   /** Gets the child blocks of a block. */
-  getChildren?: (block: T | R) => T[] | null | undefined
+  getChildren?: (block: T | R, slot: string) => T[] | null | undefined
+  /** Gets the available "children slots" for a black; defaults to `['main']`. */
+  getSlots?: (block: T | R) => string[] | null | undefined
   /** Gets the configuration options for a block. */
   getOptions?: (block: T | R) => BlockOptions | null | undefined
   /**
@@ -105,7 +107,7 @@ export type BlockProps<K, T> = {
   children: JSX.Element
 }
 
-export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
+export function BlockTree<K, T, R = T>(props: BlockTreeProps<K, T, R>) {
   const itemElements = new Map<ItemId, HTMLElement>()
   let topElement!: HTMLDivElement
 
@@ -118,13 +120,19 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     dragThreshold: props.dragThreshold ?? 10,
   }))
 
+  const DEFAULT_SLOTS = ['main']
+  const getChildren = (block: T | R) => {
+    const slots = props.getSlots?.(block) ?? DEFAULT_SLOTS
+    return slots.flatMap(slot => props.getChildren?.(block, slot) ?? [])
+  }
+
   const blockMap = createMemo(() => {
     const output = new Map<K, T>()
     const insert = (block: T) => {
       output.set(props.getKey(block), block)
-      props.getChildren?.(block)?.forEach(insert)
+      getChildren(block).forEach(insert)
     }
-    insert(props.root)
+    getChildren(props.root).forEach(insert)
     return output
   })
 
@@ -137,9 +145,9 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     }
     if (selection?.blocks) {
       const keys = new Set(selection.blocks)
-      const process = (block: T): Place<K> | undefined => {
+      const process = (block: T | R): Place<K> | undefined => {
         const parent = props.getKey(block)
-        const blocks = props.getChildren?.(block) ?? []
+        const blocks = getChildren(block)
 
         let before: K | null = null
         for (let i = blocks.length - 1; i >= 0; i--) {
@@ -160,7 +168,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
   const inputTree = VirtualTree.create(
     () => props.root,
     block => props.getKey(block),
-    block => props.getChildren?.(block) ?? [],
+    getChildren,
     block => props.getOptions?.(block) ?? {},
   )
 
@@ -249,11 +257,11 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     onCleanup(() => document.removeEventListener('pointerdown', ondown, { capture: true }))
   })
 
-  const getSpacing = (block: T) => props.getOptions?.(block)?.spacing ?? DEFAULT_SPACING
+  const getSpacing = (block: T | R) => props.getOptions?.(block)?.spacing ?? DEFAULT_SPACING
 
   const renderItem = (
     item: Item<K, T>,
-    tree: Accessor<VirtualTree<K, T>>,
+    tree: Accessor<VirtualTree<K, T, R>>,
     itemProps: { dragging?: boolean } = {},
     styles?: Accessor<Map<string, AnimationState>>,
   ) => {
@@ -341,7 +349,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
 
   const renderItems = (
     parent: ItemId,
-    tree: Accessor<VirtualTree<K, T>>,
+    tree: Accessor<VirtualTree<K, T, R>>,
     styles?: Accessor<Map<string, AnimationState>>,
   ) => {
     const items = createMemo(() => tree().children(parent))

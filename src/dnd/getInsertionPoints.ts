@@ -6,8 +6,8 @@ import { VirtualTree } from 'src/virtual-tree'
 
 export type InsertionPoint<K> = { id: ItemId; place: Place<K>; y: number }
 
-export function getInsertionPoints<K, T>(
-  tree: VirtualTree<K, T>,
+export function getInsertionPoints<K, T, R>(
+  tree: VirtualTree<K, T, R>,
   tags: string[],
   measures: Map<ItemId, BlockMeasurements>,
 ): InsertionPoint<K>[] {
@@ -15,7 +15,7 @@ export function getInsertionPoints<K, T>(
 
   const layout = calculateLayout(tree, id => measures.get(id), { skipHidden: true })
 
-  const checkTag = (block: T) => {
+  const checkTag = (block: T | R) => {
     const acceptedTags = tree.options(block).accepts
     return !tags.find(tag => !acceptedTags?.includes(tag))
   }

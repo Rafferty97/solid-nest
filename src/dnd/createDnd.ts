@@ -19,8 +19,8 @@ type ClickedBlock<K> = {
   pos: Vec2
 }
 
-export function createDnd<K, T>(
-  input: Accessor<VirtualTree<K, T>>,
+export function createDnd<K, T, R>(
+  input: Accessor<VirtualTree<K, T, R>>,
   options: Accessor<{ dragRadius: Vec2; dragThreshold: number }>,
   itemElements: Map<ItemId, HTMLElement>,
   getBlocksToDrag: (key: K) => T[],
