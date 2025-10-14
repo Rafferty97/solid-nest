@@ -20,7 +20,6 @@ export const Placeholder = () => {
 }
 
 export const BasicBlock = (props: BlockProps<string, MyBlock>) => {
-  console.log('render', props.key)
   return (
     <div
       style={{
@@ -60,7 +59,6 @@ export const BasicBlockWithChildren = (props: BlockProps<string, MyBlock>) => {
 export const BasicBlockWithCollapse = (
   props: BlockProps<string, CollapsableBlock> & { setOpen: (open: boolean) => void },
 ) => {
-  console.log('render', props.key)
   return (
     <div
       style={{

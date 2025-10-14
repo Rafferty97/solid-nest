@@ -44,7 +44,7 @@ export const NestingRules: Story = {
   },
 }
 
-export const StaticChildren: Story = {
+export const MultipleChildSlots: Story = {
   render: () => {
     const props = createBlockTree<MyBlock>({
       key: 'root',
@@ -81,7 +81,16 @@ export const StaticChildren: Story = {
       <div style={{ 'max-width': '60ch' }}>
         <BlockTree
           {...props}
-          getOptions={block => ({ static: block.key === 'top' })}
+          getContainers={block => {
+            if (block.key === 'top') {
+              return [
+                ...props.getContainers(block.children!.find(b => b.key === 'a')!),
+                ...props.getContainers(block.children!.find(b => b.key === 'b')!),
+              ]
+            } else {
+              return props.getContainers(block)
+            }
+          }}
           children={props => {
             if (props.key === 'top') {
               const resolved = children(() => props.children).toArray
