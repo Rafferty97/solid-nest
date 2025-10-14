@@ -46,22 +46,24 @@ export class VirtualTree<K, T> {
     getOptions: (block: T) => BlockOptions,
     getContainers: (block: T) => Container<K, T>[],
   ): Accessor<VirtualTree<K, T>> {
-    let cache = new Map<T, BlockItem<K, T>>()
+    let blockCache = new Map<T, BlockItem<K, T>>()
+    let containerCache = new Map<Container<K, T>, ContainerItem<K>>()
 
     return createMemo(() => {
       const items = new Map<ItemId, Item<K, T>>()
       const childMap = new Map<ItemId, ItemId[]>()
       const nextCache = new Map<T, BlockItem<K, T>>()
+      const nextCache2 = new Map<Container<K, T>, ContainerItem<K>>()
 
       const processBlock = (block: T) => {
-        const item = cache.get(block) ?? createBlockItem(block, getKey(block))
+        const item = blockCache.get(block) ?? createBlockItem(block, getKey(block), getContainers(block))
         nextCache.set(block, item)
         items.set(item.id, item)
 
         const childIds: ItemId[] = []
         childMap.set(item.id, childIds)
 
-        for (const container of getContainers(block)) {
+        for (const container of item.containers) {
           childIds.push(processContainer(container).id)
         }
 
@@ -69,13 +71,14 @@ export class VirtualTree<K, T> {
       }
 
       const processContainer = (container: Container<K, T>) => {
-        const item = createContainerItem(container)
+        const item = containerCache.get(container) ?? createContainerItem(container)
+        nextCache2.set(container, item)
         items.set(item.id, item)
 
         const childIds: ItemId[] = []
         childMap.set(item.id, childIds)
 
-        for (const block of container.blocks) {
+        for (const block of container.getBlocks()) {
           childIds.push(processBlock(block).id)
         }
 
@@ -88,7 +91,8 @@ export class VirtualTree<K, T> {
 
       const root = processContainer(getRoot())
 
-      cache = nextCache
+      blockCache = nextCache
+      containerCache = nextCache2
 
       const init: VirtualTreeInit<K, T> = {
         root,
@@ -99,6 +103,11 @@ export class VirtualTree<K, T> {
 
       return new VirtualTree(init, items, childMap)
     })
+  }
+
+  findBlock(key: K): T | undefined {
+    const item = this._items.get(createBlockItemId(key))
+    return item?.kind === 'block' ? item.block : undefined
   }
 
   findItemById(id: ItemId): Item<K, T> | undefined {

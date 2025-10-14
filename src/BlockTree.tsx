@@ -90,12 +90,14 @@ export type BlockOptions = {
 }
 
 export type Container<K, T> = {
+  /** The container's unique key. */
   key: K
   /** The spacing between child blocks, in pixels. */
   spacing?: number
   /** The set of tags that this block accepts as children. */
   accepts?: string[]
-  blocks: T[]
+  /** Gets the blocks in this container. */
+  getBlocks: () => T[]
 }
 
 export type Selection<K> = { blocks?: K[]; place?: Place<K> }
@@ -121,18 +123,6 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     dragThreshold: props.dragThreshold ?? 10,
   }))
 
-  const blockMap = createMemo(() => {
-    const output = new Map<K, T>()
-    const insert = (block: T) => {
-      const key = props.getKey(block)
-      output.set(key, block)
-      const containers = props.getContainers?.(block)
-      containers?.forEach(c => c.blocks.forEach(insert))
-    }
-    props.root.blocks.forEach(insert)
-    return output
-  })
-
   const selectedBlocks = () => props.selection?.blocks ?? []
 
   const selectedPlace = createMemo(() => {
@@ -143,7 +133,8 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     if (selection?.blocks) {
       const keys = new Set(selection.blocks)
       const process = (container: Container<K, T>): Place<K> | undefined => {
-        const { key: parent, blocks } = container
+        const parent = container.key
+        const blocks = container.getBlocks()
 
         let before: K | null = null
         for (let i = blocks.length - 1; i >= 0; i--) {
@@ -172,10 +163,12 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     block => props.getContainers?.(block) ?? [],
   )
 
+  const getBlock = (key: K) => inputTree().findBlock(key)
+
   const blocksToDrag = (key: K) => {
     const selection_ = selectedBlocks()
     return normaliseSelection(inputTree(), selection_.includes(key) ? selection_ : [key])
-      .map(key => blockMap().get(key))
+      .map(key => getBlock(key))
       .filter(notNull)
   }
 
@@ -226,7 +219,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     if (!keys.length || !data) return
 
     ev.preventDefault()
-    const blocks = keys.map(key => blockMap().get(key)).filter(notNull)
+    const blocks = keys.map(key => getBlock(key)).filter(notNull)
     props.onCopy?.({ blocks, data })
   }
 
@@ -236,7 +229,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     if (!keys.length || !data) return
 
     ev.preventDefault()
-    const blocks = keys.map(key => blockMap().get(key)).filter(notNull)
+    const blocks = keys.map(key => getBlock(key)).filter(notNull)
     props.onCut?.({ blocks, data })
   }
 
@@ -364,6 +357,8 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     }
   }
 
+  const root = createMemo(() => tree().root)
+
   return (
     <div
       onFocusOut={ev => {
@@ -382,13 +377,13 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       }}
     >
       <div ref={focusElement} tabIndex={-1} />
-      {renderItem(tree().root, tree, {}, styles)}
+      {renderItem(root(), tree, {}, styles)}
       {/* Drag ghost */}
       <Show when={dragTree()} keyed>
         {tree => {
           const blocks = tree
             .children(tree.root.id)
-            .map(item => (item.kind === 'block' ? blockMap().get(item.key) : null))
+            .map(item => (item.kind === 'block' ? getBlock(item.key) : null))
             .filter(notNull)
           const top = createMemo(() => {
             const state = dragState()

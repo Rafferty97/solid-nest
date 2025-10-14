@@ -7,7 +7,7 @@ export type Item<K, T = unknown> = ContainerItem<K> | BlockItem<K, T> | Placehol
 export type ItemKind = Item<any, any>['kind']
 
 export type ContainerItem<K> = Readonly<{ id: ItemId; kind: 'container'; key: K; spacing: number; accepts: string[] }>
-export type BlockItem<K, T> = Readonly<{ id: ItemId; kind: 'block'; key: K; block: T }>
+export type BlockItem<K, T> = Readonly<{ id: ItemId; kind: 'block'; key: K; block: T; containers: Container<K, T>[] }>
 export type PlaceholderItem<K> = Readonly<{ id: ItemId; kind: 'placeholder'; parent: K }>
 export type GapItem = Readonly<{ id: ItemId; kind: 'gap'; before: ItemId; height: number }>
 
@@ -18,8 +18,12 @@ export function createContainerItem<K>(container: Container<K, unknown>): Contai
     id: `c-${container.key}` as ItemId,
     kind: 'container',
     key: container.key,
-    spacing: container.spacing ?? 0,
-    accepts: container.accepts ?? [],
+    get spacing() {
+      return container.spacing ?? 0
+    },
+    get accepts() {
+      return container.accepts ?? []
+    },
   }
 }
 
@@ -27,12 +31,13 @@ export function createContainerItemId<K>(key: K): ItemId {
   return `c-${key}` as ItemId
 }
 
-export function createBlockItem<K, T>(block: T, key: K): BlockItem<K, T> {
+export function createBlockItem<K, T>(block: T, key: K, containers: Container<K, T>[]): BlockItem<K, T> {
   return {
     id: createBlockItemId(key),
     kind: 'block',
     key,
     block,
+    containers,
   }
 }
 

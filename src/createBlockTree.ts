@@ -25,14 +25,20 @@ type Block<T> = { key: unknown; children?: T[] }
 export function createBlockTree<T extends Block<T>>(init: T) {
   type K = T['key']
 
-  const [root, setRoot] = createStore(init)
+  const [tree, setTree] = createStore(init)
   const [selection, setSelection] = createSignal<Selection<K>>({})
 
+  const root: Container<K, T> = {
+    key: tree.key,
+    getBlocks: () => tree.children ?? [],
+    spacing: 12,
+  }
+
   return {
-    get root(): Container<K, T> {
-      return { key: root.key, blocks: root.children ?? [], spacing: 12 }
-    },
-    setRoot,
+    root,
+
+    tree,
+    setTree,
 
     get selection() {
       return selection()
@@ -44,7 +50,7 @@ export function createBlockTree<T extends Block<T>>(init: T) {
     },
 
     getContainers(block: T): Container<K, T>[] {
-      return block.children ? [{ key: block.key, blocks: block.children, spacing: 12 }] : []
+      return block.children ? [{ key: block.key, getBlocks: () => block.children ?? [], spacing: 12 }] : []
     },
 
     onSelectionChange(event: SelectionEvent<K>) {
@@ -52,7 +58,7 @@ export function createBlockTree<T extends Block<T>>(init: T) {
     },
 
     onInsert(event: InsertEvent<K, T>) {
-      setRoot(produce(root => insertBlocks(root, event.blocks, event.place)))
+      setTree(produce(root => insertBlocks(root, event.blocks, event.place)))
     },
 
     onReorder(event: ReorderEvent<K>) {
@@ -61,11 +67,11 @@ export function createBlockTree<T extends Block<T>>(init: T) {
         removeBlocks(root, event.keys, blocks)
         insertBlocks(root, blocks, event.place)
       }
-      setRoot(produce(moveBlocks))
+      setTree(produce(moveBlocks))
     },
 
     onRemove(event: RemoveEvent<K>) {
-      setRoot(produce(root => removeBlocks(root, event.keys)))
+      setTree(produce(root => removeBlocks(root, event.keys)))
     },
 
     toggleBlockSelected(key: K, selected: boolean) {
@@ -90,7 +96,7 @@ export function createBlockTree<T extends Block<T>>(init: T) {
     },
 
     updateBlock(key: K, updates: Partial<T>) {
-      setRoot(
+      setTree(
         produce(root => {
           const block = findBlock(root, key)
           if (!block) return
