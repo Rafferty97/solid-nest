@@ -29,36 +29,36 @@ const nestedList: MyBlock = {
   children: [
     {
       key: '1',
-      data: 'Drag me',
+      data: 'Item 1',
       children: [
-        { key: '2', data: 'Or drag me' },
-        { key: '3', data: 'Reorder us!' },
+        { key: '2', data: 'Item 2', children: [] },
+        { key: '3', data: 'Item 3', children: [] },
       ],
     },
-    { key: '4', data: 'Drag me' },
-    { key: '5', data: 'Or drag me' },
-    { key: '6', data: 'Reorder us!' },
+    { key: '4', data: 'Item 4', children: [] },
+    { key: '5', data: 'Item 5', children: [] },
+    { key: '6', data: 'Item 6', children: [] },
   ],
 }
 
 const nestedListWithCollapse: CollapsableBlock = {
   key: 'root',
   text: '',
-  open: true,
   children: [
     {
       key: '1',
-      text: 'Drag me',
+      text: 'Item 1',
       open: true,
       children: [
-        { key: '2', text: 'Or drag me', open: true, children: [] },
-        { key: '3', text: 'Reorder us!', open: true, children: [] },
+        { key: '2', text: 'Item 2', children: [], open: true },
+        { key: '3', text: 'Item 3', children: [], open: true },
       ],
     },
-    { key: '4', text: 'Drag me', open: true },
-    { key: '5', text: 'Or drag me', open: true },
-    { key: '6', text: 'Reorder us!', open: true },
+    { key: '4', text: 'Item 4', children: [], open: true },
+    { key: '5', text: 'Item 5', children: [], open: true },
+    { key: '6', text: 'Item 6', children: [], open: true },
   ],
+  open: true,
 }
 
 export const BasicUsage: Story = {
