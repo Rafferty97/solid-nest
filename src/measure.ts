@@ -1,8 +1,8 @@
-import { childrenWrapperClass } from './styles'
+import { blockClass } from './styles'
 
 export type BlockMeasurements = Readonly<{
   container: DOMRect
-  children: Readonly<{ x: number; y: number; w: number }>[]
+  children: Readonly<{ x: number; y: number; w: number; id?: string }>[]
   bottom: number
 }>
 
@@ -24,12 +24,19 @@ function measureBlock<K>(key: K, block: HTMLElement): BlockMeasurements {
   let y = container.y
 
   const children: BlockMeasurements['children'] = []
-  for (const el of block.querySelectorAll(`.${childrenWrapperClass}[data-key=${JSON.stringify(key)}]`)) {
+  let lastNode: Element | undefined
+  for (const el of block.querySelectorAll(`.${blockClass}`)) {
+    if (lastNode?.contains(el)) continue
+    lastNode = el
+
     const rect = el.getBoundingClientRect()
+    if (rect.bottom <= container.top || rect.top >= container.bottom) continue
+
     children.push({
       x: rect.x - container.x,
       y: rect.top - y,
       w: rect.width - container.width,
+      id: el.getAttribute('data-id') ?? undefined,
     })
     y = rect.bottom
   }

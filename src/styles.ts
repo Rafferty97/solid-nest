@@ -1,7 +1,6 @@
 const PREFIX = 'solidnest'
 
 export const blockClass = `${PREFIX}-block`
-export const childrenWrapperClass = `${PREFIX}-children`
 export const spacerClass = `${PREFIX}-spacer`
 
 export const durationVar = `--${PREFIX}-duration`
@@ -9,19 +8,15 @@ export const spacingVar = `--${PREFIX}-spacing`
 
 const stylesheet = new CSSStyleSheet()
 stylesheet.replaceSync(`
-  .${childrenWrapperClass} > .${blockClass} + .${blockClass} {
+  .${blockClass}[data-kind="container"] > .${blockClass} + .${blockClass} {
     margin-top: var(${spacingVar});
   }
 
-   .${childrenWrapperClass} > .${blockClass} + .${blockClass}[data-kind='placeholder'] {
-    margin-top: 0;
-  }
-
-  .${blockClass} + .${blockClass}[data-kind='placeholder'] {
+  .${blockClass}[data-kind="container"] > .${blockClass} + .${blockClass}[data-kind='placeholder'] {
     display: none;
   }
 
-  .${blockClass}[data-measuring] .${childrenWrapperClass} > .${spacerClass} {
+  .${blockClass}[data-measuring] .${spacerClass} {
     display: none;
   }
 `)

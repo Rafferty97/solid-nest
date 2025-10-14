@@ -38,9 +38,9 @@ export function calculateLayout<K>(
     if (item.kind === 'block') {
       const children = tree.children(item.id)
 
-      for (let i = 0; i < children.length; i++) {
-        const child = children[i]!
-        const offset = measure.children[i] ?? ZeroOffset
+      for (const offset of measure.children) {
+        const child = children.find(c => c.id === offset.id)
+        if (!child) continue
         nextY += offset.y
         inner(child, x + offset.x, width + offset.w)
       }
