@@ -343,6 +343,7 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       )
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (item.kind === 'gap') {
       return (
         <div class={blockClass} data-kind={item.kind} style={outerStyle(styles?.().get(item.id))}>

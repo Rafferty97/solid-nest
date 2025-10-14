@@ -3,7 +3,6 @@ import { BlockMeasurements } from './measure'
 import { VirtualTree } from './virtual-tree'
 
 const ZeroMeasurement = { children: [], bottom: 0 }
-const ZeroOffset = { x: 0, y: 0, w: 0 }
 
 export function calculateLayout<K>(
   tree: VirtualTree<K, any>,

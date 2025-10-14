@@ -1,6 +1,6 @@
 import { createSignal } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
-import { Container, Place, Selection } from 'src'
+import { Place, Selection } from 'src'
 import { SelectionEvent, InsertEvent, ReorderEvent, RemoveEvent } from 'src'
 
 type Block<T> = { key: unknown; children?: T[] }
@@ -25,21 +25,12 @@ type Block<T> = { key: unknown; children?: T[] }
 export function createBlockTree<T extends Block<T>>(init: T) {
   type K = T['key']
 
-  const [tree, setTree] = createStore(init)
+  const [root, setRoot] = createStore(init)
   const [selection, setSelection] = createSignal<Selection<K>>({})
-
-  const root: Container<K, T> = {
-    key: tree.key,
-    getBlocks: () => tree.children ?? [],
-    spacing: 12,
-  }
 
   return {
     root,
-
-    tree,
-    setTree,
-
+    setRoot,
     get selection() {
       return selection()
     },
@@ -49,8 +40,8 @@ export function createBlockTree<T extends Block<T>>(init: T) {
       return block.key
     },
 
-    getContainers(block: T): Container<K, T>[] {
-      return block.children ? [{ key: block.key, getBlocks: () => block.children ?? [], spacing: 12 }] : []
+    getChildren(block: T) {
+      return block.children
     },
 
     onSelectionChange(event: SelectionEvent<K>) {
@@ -58,7 +49,7 @@ export function createBlockTree<T extends Block<T>>(init: T) {
     },
 
     onInsert(event: InsertEvent<K, T>) {
-      setTree(produce(root => insertBlocks(root, event.blocks, event.place)))
+      setRoot(produce(root => insertBlocks(root, event.blocks, event.place)))
     },
 
     onReorder(event: ReorderEvent<K>) {
@@ -67,11 +58,11 @@ export function createBlockTree<T extends Block<T>>(init: T) {
         removeBlocks(root, event.keys, blocks)
         insertBlocks(root, blocks, event.place)
       }
-      setTree(produce(moveBlocks))
+      setRoot(produce(moveBlocks))
     },
 
     onRemove(event: RemoveEvent<K>) {
-      setTree(produce(root => removeBlocks(root, event.keys)))
+      setRoot(produce(root => removeBlocks(root, event.keys)))
     },
 
     toggleBlockSelected(key: K, selected: boolean) {
@@ -96,7 +87,7 @@ export function createBlockTree<T extends Block<T>>(init: T) {
     },
 
     updateBlock(key: K, updates: Partial<T>) {
-      setTree(
+      setRoot(
         produce(root => {
           const block = findBlock(root, key)
           if (!block) return
