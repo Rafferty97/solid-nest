@@ -102,6 +102,7 @@ export const BasicBlockWithCollapse = (
       <Show when={props.block.open}>
         <div style={{ margin: '0.75rem 0 0 0' }}>{props.children}</div>
       </Show>
+      <div style={{ margin: '0.75rem 0 0 0' }}>Footer element</div>
     </div>
   )
 }

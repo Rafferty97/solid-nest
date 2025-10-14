@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from 'storybook-solidjs-vite'
 import { BlockTree, createBlockTree } from '../src'
 import { BasicBlock, BasicBlockWithChildren, BasicBlockWithCollapse, Placeholder } from './components'
 import { MyBlock, CollapsableBlock } from './types'
+import { createUniqueId } from 'solid-js'
 import './main.css'
 
 const meta = {
@@ -64,10 +65,17 @@ export const BasicUsage: Story = {
   render: () => {
     const props = createBlockTree<MyBlock>(structuredClone(basicList))
 
+    const appendBlock = () =>
+      props.onInsert({
+        place: { parent: props.root.key, before: null },
+        blocks: [{ key: createUniqueId(), data: 'New block' }],
+      })
+
     return (
       <div style={{ 'max-width': '60ch' }}>
         <BlockTree {...props} children={BasicBlock} />
-        Footer
+        <div style={{ height: '12px' }} />
+        <button onClick={appendBlock}>Add block</button>
       </div>
     )
   },

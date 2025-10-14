@@ -307,12 +307,10 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
           class={blockClass}
           data-kind={item.kind}
           data-id={item.id}
-          style={{ [spacingVar]: `${item.spacing}px` }} // , outline: item.id === 'c-1' ? '1px solid green' : ''
+          style={{ [spacingVar]: `${item.spacing}px` }}
         >
           <For each={tree().children(item.id)}>{child => renderItem(child, tree, {}, styles)}</For>
-          {/* <div style={{ 'border-top': '1px solid red' }} /> */}
           <div class={spacerClass} style={spacerStyle(styles?.().get(item.id))} />
-          {/* <div style={{ 'border-top': '1px solid green' }} /> */}
           {/* This element forces the container to adapt its height based on the spacer inside `renderItems` */}
           <div style={{ 'margin-top': '-1px', 'padding-bottom': '1px' }} />
         </div>
