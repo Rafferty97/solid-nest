@@ -30,7 +30,7 @@ function measureBlock<K>(key: K, block: HTMLElement): BlockMeasurements {
     lastNode = el
 
     const rect = el.getBoundingClientRect()
-    if (rect.bottom <= container.top || rect.top >= container.bottom) continue
+    if (rect.top < container.top || rect.bottom > container.bottom) continue
 
     children.push({
       x: rect.x - container.x,
@@ -42,8 +42,6 @@ function measureBlock<K>(key: K, block: HTMLElement): BlockMeasurements {
   }
 
   const bottom = container.bottom - y
-
-  // const childrenVisible = !!children && children.top < container.bottom && children.bottom > container.top
 
   return { container, children, bottom }
 }
