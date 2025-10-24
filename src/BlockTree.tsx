@@ -1,4 +1,4 @@
-import { Accessor, Component, createMemo, For, JSX, onCleanup, onMount, Show } from 'solid-js'
+import { Accessor, Component, createEffect, createMemo, For, JSX, onCleanup, onMount, Show } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { BlockItem, Item, ItemId } from './Item'
 import {
@@ -262,7 +262,6 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
     const select = () => {
       const { mode, keys } = nextSelection
       props.onSelectionChange?.({ kind: 'blocks', key: item.key, mode, blocks: keys })
-      focusElement.focus({ preventScroll: true })
     }
 
     if (nextSelection.onClick) {
@@ -286,6 +285,18 @@ export function BlockTree<K, T>(props: BlockTreeProps<K, T>) {
       }
     }
   }
+
+  createEffect(() => {
+    const selection = props.selection
+    if (!selection) return
+
+    const hasSelection = (selection.blocks?.length ?? 0) > 0 || selection.place != null
+    const hasFocus = document.activeElement === focusElement
+
+    if (hasSelection && !hasFocus) {
+      focusElement.focus({ preventScroll: true })
+    }
+  })
 
   const renderItem = (
     item: Item<K, T>,
