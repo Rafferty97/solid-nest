@@ -25,5 +25,6 @@
     "@typescript-eslint/no-useless-empty-export": "warn",
     "no-only-tests/no-only-tests": "warn",
     "eslint-comments/no-unused-disable": "warn"
-  }
+  },
+  "extends": ["plugin:storybook/recommended"]
 }

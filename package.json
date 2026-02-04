@@ -86,10 +86,5 @@
   "keywords": [
     "solid"
   ],
-  "packageManager": "pnpm@10.18.0",
-  "eslintConfig": {
-    "extends": [
-      "plugin:storybook/recommended"
-    ]
-  }
+  "packageManager": "pnpm@10.18.0"
 }
